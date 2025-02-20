@@ -1,13 +1,5 @@
 <script lang="ts" setup>
-import { ElConfigProvider } from "element-plus";
-import zhCn from "element-plus/es/locale/lang/zh-cn";
-import {
-  ArrowDown,
-  Plus,
-  Delete,
-  Edit,
-  Setting,
-} from "@element-plus/icons-vue";
+import { Setting } from "@element-plus/icons-vue";
 const formData = ref({
   name: "",
 });
@@ -45,7 +37,6 @@ const options = Array.from({ length: 1000 }).map((_, idx) => ({
   value: `Option ${idx + 1}`,
   label: `${initials[idx % 10]}${idx}`,
 }));
-
 </script>
 
 <template>
@@ -57,9 +48,10 @@ const options = Array.from({ length: 1000 }).map((_, idx) => ({
       placeholder="点击右侧按钮添加cookie来源"
       :height="150"
     />
-    <el-button
+    <el-link
+      class="!text-lg"
+      :underline="false"
       :icon="Setting"
-      circle
       @click="$emit('update:modelValue', 'settings')"
     />
   </div>
