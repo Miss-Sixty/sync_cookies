@@ -48,12 +48,13 @@ const options = Array.from({ length: 1000 }).map((_, idx) => ({
       placeholder="点击右侧按钮添加cookie来源"
       :height="150"
     />
+    <router-link to="/settings">
     <el-link
       class="!text-lg"
       :underline="false"
       :icon="Setting"
-      @click="$emit('update:modelValue', 'settings')"
     />
+  </router-link>
   </div>
 
   <el-table
