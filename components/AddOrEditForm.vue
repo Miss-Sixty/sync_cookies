@@ -2,22 +2,7 @@
 import { Delete } from "@element-plus/icons-vue";
 import { ElForm } from "element-plus";
 import { PropType } from "vue";
-
-interface Cookie {
-  label: string;
-  value: string;
-}
-
-interface ListItem {
-  host: string;
-  cookie: string[];
-  availableCookies: Cookie[];
-}
-
-interface FormData {
-  targetHost: string;
-  list: ListItem[];
-}
+import { Cookie, ListItem, FormData } from '../types';
 
 const formData = defineModel<FormData>({
   default: {
@@ -101,7 +86,7 @@ defineExpose({
               :key="cookie.value"
               :value="cookie.value"
             >
-              {{ cookie.label }}
+              {{ cookie.value }}
             </el-checkbox>
           </el-checkbox-group>
         </el-form-item>

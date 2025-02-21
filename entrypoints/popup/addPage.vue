@@ -4,32 +4,9 @@ import { storage } from "wxt/storage";
 import { useRouter } from "vue-router";
 import Header from "../../components/Header.vue";
 import AddOrEditForm from "../../components/AddOrEditForm.vue";
-
-// 导入 CookieRule 类型
-interface CookieRule {
-  targetHost: string;
-  list: {
-    host: string;
-    cookie: string[];
-  }[];
-}
-const STORAGE_KEY = "local:cookie_rules";
-
-interface Cookie {
-  label: string;
-  value: string;
-}
-
-interface ListItem {
-  host: string;
-  cookie: string[];
-  availableCookies: Cookie[];
-}
-
-interface FormData {
-  targetHost: string;
-  list: ListItem[];
-}
+import { useRuleStore } from "../../stores/rules";
+import { Cookie, ListItem, FormData } from '../../types';
+const store = useRuleStore();
 
 const formData = ref<FormData>({
   targetHost: "",
@@ -49,8 +26,7 @@ const getCookies = async (host: string) => {
     const url = new URL(host);
     const cookies = await browser.cookies.getAll({ domain: url.hostname });
     return cookies.map((cookie) => ({
-      label: `${cookie.name} = ${cookie.value}`,
-      value: cookie.name,
+      value: `${cookie.name}=${cookie.value}`,
     }));
   } catch (e) {
     console.error("Invalid URL or cookie error:", e);
@@ -86,55 +62,21 @@ const getCurrentTab = async () => {
 getCurrentTab();
 
 // 保存表单数据
-const handleSave = async () => {
+const validateForm = async () => {
   try {
-    const res = await formRef.value?.validate();
-    console.log(2, res);
+    await formRef.value?.validate();
     if (!formData.value.list.length) {
       ElMessage.error("请至少添加一个来源");
       return;
     }
-
-    // 准备保存的数据（去掉availableCookies）
-    const saveData: CookieRule = {
-      targetHost: formData.value.targetHost,
-      list: formData.value.list.map((item) => ({
-        host: item.host,
-        cookie: item.cookie,
-      })),
-    };
-
-    // 获取现有数据
-    const data: CookieRule[] =
-      (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
-    console.log(1, data);
-
-    const index = data.findIndex(
-      (rule) => rule.targetHost === saveData.targetHost
-    );
-
-    if (index !== -1) {
-      // 提醒是否覆盖
-      const isCover = await ElMessageBox.confirm(
-        "目标网址已存在，是否覆盖？",
-        "提示",
-        {
-          confirmButtonText: "覆盖",
-          cancelButtonText: "取消",
-        }
-      );
-      if (isCover === "confirm") {
-        data[index] = saveData;
-        await storage.setItem(STORAGE_KEY, data);
-        ElMessage.success("修改成功");
-        router.back();
-      }
-    } else {
-      data.push(saveData);
-      await storage.setItem(STORAGE_KEY, data);
-      ElMessage.success("添加成功");
-      router.back();
-    }
+    handleSave();
+  } catch (e) {}
+};
+// 保存表单数据
+const handleSave = async () => {
+  try {
+    await store.handleSave(formData.value);
+    router.back();
   } catch (e) {
     ElMessage.error(`添加失败：${e}`);
   }
@@ -144,7 +86,7 @@ const handleSave = async () => {
 <template>
   <Header title="添加">
     <template #extra>
-      <el-button type="primary" class="!px-2 !h-7" @click="handleSave">
+      <el-button type="primary" class="!px-2 !h-7" @click="validateForm">
         保 存
       </el-button>
     </template>

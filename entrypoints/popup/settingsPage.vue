@@ -4,17 +4,12 @@ import { Delete, Edit, Plus, Sort } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { storage } from "wxt/storage";
 import { useRouter } from "vue-router";
-import Header from '../../components/Header.vue'
+import Header from "../../components/Header.vue";
+import { useRuleStore } from "../../stores/rules";
+import { CookieRule } from '../../types';
+import { STORAGE_KEY } from './config';
+const store = useRuleStore();
 
-interface CookieRule {
-  targetHost: string;
-  list: {
-    host: string;
-    cookie: string[];
-  }[];
-}
-
-const STORAGE_KEY = "local:cookie_rules";
 const modelValue = defineModel();
 const editData = ref<CookieRule>();
 const rules = ref<CookieRule[]>([]);
@@ -58,11 +53,9 @@ const handleDelete = async (rule: CookieRule) => {
 
 // 编辑规则
 const handleEdit = (rule: CookieRule) => {
+  store.editingRule = rule;
   router.push({
     name: "edit",
-    params: {
-      editData: JSON.stringify(rule),
-    },
   });
 };
 
@@ -104,14 +97,13 @@ onMounted(() => {
 <template>
   <Header title="设置">
     <template #extra>
-        <router-link to="/add" custom v-slot="{ navigate }">
-          <el-button type="primary" size="small" :icon="Plus" @click="navigate">
-            添 加
-          </el-button>
-        </router-link>
-      </template>
+      <router-link to="/add" custom v-slot="{ navigate }">
+        <el-button type="primary" size="small" :icon="Plus" @click="navigate">
+          添 加
+        </el-button>
+      </router-link>
+    </template>
   </Header>
-
 
   <VueDraggable
     v-model="rules"
