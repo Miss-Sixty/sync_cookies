@@ -4,6 +4,7 @@ import { ElMessage } from "element-plus";
 import { PropType } from "vue";
 import { storage } from "wxt/storage";
 import { useRouter, useRoute } from 'vue-router';
+import Header from '../../components/Header.vue'
 
 // 导入 CookieRule 类型
 interface CookieRule {
@@ -219,18 +220,14 @@ const handleSave = async () => {
 </script>
 
 <template>
-  <el-page-header @back="handleBack" class="mt-1">
-    <template #content>
-      <span class="text-large font-600 mr-3">
-        {{ modelValue === "add" ? "添加" : "修改" }}
-      </span>
-    </template>
+  <Header :title="modelValue === 'add' ? '添加' : '修改'">
     <template #extra>
-      <el-button type="primary" class="!px-2 !h-7" @click="handleSave">
+          <el-button type="primary" class="!px-2 !h-7" @click="handleSave">
         保 存
       </el-button>
-    </template>
-  </el-page-header>
+      </template>
+  </Header>
+
 
   222--{{ editData }}
 

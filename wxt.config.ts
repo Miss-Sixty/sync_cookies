@@ -15,7 +15,8 @@ export default defineConfig({
     permissions: [
       "tabs",
       "cookies",
-      "storage"
+      "storage",
+      "activeTab"
     ],
     host_permissions: [
       "*://*/*"  // 允许访问所有网站的cookies
