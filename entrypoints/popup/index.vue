@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { storage } from "wxt/storage";
 import { useRouter } from "vue-router";
-
 const router = useRouter();
 const STORAGE_KEY = "local:cookie_rules";
 
@@ -28,25 +27,21 @@ const initCurrentPage = async () => {
     if (!tabs[0]?.url) return;
 
     const url = new URL(tabs[0].url);
-    currentUrl.value = url.hostname;
+
+    currentUrl.value = url.origin;
 
     // 查找匹配的规则
     const rules = (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
-    currentRule.value = rules.find(
-      (rule) => rule.targetHost === currentUrl.value
-    );
 
-    // 获取当前网址的所有cookies
-    const cookies = await browser.cookies.getAll({ domain: currentUrl.value });
-    cookieList.value = cookies.map((cookie) => ({
-      name: cookie.name,
-      value: cookie.value,
-    }));
+    currentRule.value = rules.find((rule) => {
+      return rule.targetHost === currentUrl.value;
+    });
   } catch (error) {
     console.error("Init error:", error);
     ElMessage.error("初始化失败");
   }
 };
+initCurrentPage();
 
 // 同步cookies
 const handleSync = async () => {
@@ -91,16 +86,6 @@ const handleSync = async () => {
     ElMessage.error("同步失败");
   }
 };
-
-// 跳转到设置页面
-const goToSettings = () => {
-  router.push({ name: "settings" });
-};
-
-// 组件挂载时初始化
-onMounted(() => {
-  initCurrentPage();
-});
 </script>
 
 <template>
@@ -111,12 +96,14 @@ onMounted(() => {
         <el-button type="primary" @click="handleSync" :disabled="!currentRule">
           同步 Cookie
         </el-button>
-        <el-button @click="goToSettings">设置</el-button>
+        <router-link to="/settings" custom v-slot="{ navigate }">
+          <el-button @click="navigate">设置</el-button>
+        </router-link>
       </div>
     </div>
 
-
-      <el-text v-if="!currentRule">当前网址没有保存的规则，
+    <el-text v-if="!currentRule"
+      >当前网址没有保存的规则，
       <router-link to="/add">
         <el-text type="primary">去添加</el-text>
       </router-link>
@@ -126,12 +113,12 @@ onMounted(() => {
       <div class="mb-4">
         <h3 class="font-bold mb-2">已保存的规则：</h3>
         <div class="pl-4">
-          <div v-for="item in currentRule.list" :key="item.host" class="mb-2">
+          <!-- <div v-for="item in currentRule.list" :key="item.host" class="mb-2">
             <div class="font-bold">{{ item.host }}</div>
             <div class="text-gray-600 pl-4">
               选中的 Cookies: {{ item.cookie.join(", ") }}
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
 

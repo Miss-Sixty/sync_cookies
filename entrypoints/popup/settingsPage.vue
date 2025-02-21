@@ -2,7 +2,6 @@
 import { VueDraggable } from "vue-draggable-plus";
 import { Delete, Edit, Plus, Sort } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
-import AddOrEditPage from "./AddOrEditPage.vue";
 import { storage } from "wxt/storage";
 import { useRouter } from "vue-router";
 import Header from '../../components/Header.vue'
@@ -164,9 +163,4 @@ onMounted(() => {
   <div v-if="!rules.length" class="text-center text-gray-400 mt-4">
     暂无规则，请点击右上角添加
   </div>
-  <AddOrEditPage
-    v-if="modelValue === 'add' || modelValue === 'edit'"
-    v-model="modelValue"
-    :editData="editData"
-  />
 </template>

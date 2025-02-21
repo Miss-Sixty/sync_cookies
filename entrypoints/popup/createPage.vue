@@ -3,8 +3,8 @@ import { Delete, Edit, Plus, Sort } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { PropType } from "vue";
 import { storage } from "wxt/storage";
-import { useRouter, useRoute } from 'vue-router';
-import Header from '../../components/Header.vue'
+import { useRouter, useRoute } from "vue-router";
+import Header from "../../components/Header.vue";
 
 // 导入 CookieRule 类型
 interface CookieRule {
@@ -34,6 +34,10 @@ interface FormData {
 
 const modelValue = defineModel({ default: "add" });
 const props = defineProps({
+  type: {
+    type: String,
+    default: "add",
+  },
   editData: {
     type: Object as PropType<CookieRule>,
     default: () => ({}),
@@ -58,7 +62,7 @@ const editData = computed(() => {
 
 // 初始化表单数据
 const initFormData = async (data?: CookieRule) => {
-  console.log(212,data)
+  console.log(212, data);
   if (!data) {
     formData.value = {
       targetHost: "",
@@ -151,7 +155,7 @@ const handleDel = (i: number) => {
 
 // 修改返回处理
 const handleBack = () => {
-  router.push({ name: 'settings' });
+  router.push({ name: "settings" });
 };
 
 // 保存表单数据
@@ -185,49 +189,50 @@ const handleSave = async () => {
     };
 
     // 获取现有数据
-    const data: CookieRule[] = 
+    const data: CookieRule[] =
       (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
 
-    if (modelValue.value === 'edit') {
+    if (modelValue.value === "edit") {
       // 更新现有规则
-      const index = data.findIndex(rule => rule.targetHost === props.editData?.targetHost);
+      const index = data.findIndex(
+        (rule) => rule.targetHost === props.editData?.targetHost
+      );
       if (index !== -1) {
         data[index] = saveData;
         await storage.setItem(STORAGE_KEY, data);
-        ElMessage.success('修改成功');
+        ElMessage.success("修改成功");
       } else {
-        ElMessage.error('未找到要修改的规则');
+        ElMessage.error("未找到要修改的规则");
         return;
       }
     } else {
       // 检查是否已存在相同的目标网址
-      if (data.some(rule => rule.targetHost === saveData.targetHost)) {
-        ElMessage.error('目标网址已存在');
+      if (data.some((rule) => rule.targetHost === saveData.targetHost)) {
+        ElMessage.error("目标网址已存在");
         return;
       }
       // 添加新规则
       await storage.setItem(STORAGE_KEY, [...data, saveData]);
-      ElMessage.success('添加成功');
+      ElMessage.success("添加成功");
     }
 
     // 保存成功后返回设置页面
-    router.push({ name: 'settings' });
+    router.push({ name: "settings" });
   } catch (error) {
     console.error("Save error:", error);
-    ElMessage.error(modelValue.value === 'edit' ? "修改失败" : "添加失败");
+    ElMessage.error(modelValue.value === "edit" ? "修改失败" : "添加失败");
   }
 };
 </script>
 
 <template>
-  <Header :title="modelValue === 'add' ? '添加' : '修改'">
+  <Header :title="type === 'add' ? '添加' : '修改'">
     <template #extra>
-          <el-button type="primary" class="!px-2 !h-7" @click="handleSave">
+      <el-button type="primary" class="!px-2 !h-7" @click="handleSave">
         保 存
       </el-button>
-      </template>
+    </template>
   </Header>
-
 
   222--{{ editData }}
 

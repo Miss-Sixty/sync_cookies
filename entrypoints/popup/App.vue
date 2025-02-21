@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="w-[600px] h-[400px] p-2 flex flex-col">
+  <div class="w-96 h-[400px] p-2 flex flex-col">
     <router-view></router-view>
   </div>
 </template>
