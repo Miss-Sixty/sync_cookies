@@ -1,17 +1,10 @@
 <script lang="ts" setup>
 import { storage } from "wxt/storage";
 import { useRouter } from "vue-router";
+import { CookieRule } from '../../types';
+import { STORAGE_KEY } from './config';
+
 const router = useRouter();
-const STORAGE_KEY = "local:cookie_rules";
-
-interface CookieRule {
-  targetHost: string;
-  list: {
-    host: string;
-    cookie: string[];
-  }[];
-}
-
 const currentUrl = ref("");
 const currentRule = ref<CookieRule>();
 const cookieList = ref<{ name: string; value: string }[]>([]);
@@ -27,21 +20,25 @@ const initCurrentPage = async () => {
     if (!tabs[0]?.url) return;
 
     const url = new URL(tabs[0].url);
-
     currentUrl.value = url.origin;
 
     // 查找匹配的规则
     const rules = (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
+    currentRule.value = rules.find((rule) => rule.targetHost === currentUrl.value);
 
-    currentRule.value = rules.find((rule) => {
-      return rule.targetHost === currentUrl.value;
-    });
+    // 获取当前页面的cookies
+    if (currentRule.value) {
+      const cookies = await browser.cookies.getAll({ domain: url.hostname });
+      cookieList.value = cookies.map(cookie => ({
+        name: cookie.name,
+        value: cookie.value
+      }));
+    }
   } catch (error) {
     console.error("Init error:", error);
     ElMessage.error("初始化失败");
   }
 };
-initCurrentPage();
 
 // 同步cookies
 const handleSync = async () => {
@@ -54,27 +51,28 @@ const handleSync = async () => {
     // 遍历所有来源
     for (const source of currentRule.value.list) {
       // 获取来源网址的指定cookies
+      const url = new URL(source.host.startsWith('http') ? source.host : `http://${source.host}`);
       const sourceCookies = await browser.cookies.getAll({
-        domain: source.host,
+        domain: url.hostname,
       });
-      const selectedCookies = sourceCookies.filter((cookie) =>
-        source.cookie.includes(cookie.name)
-      );
 
       // 将cookies写入当前网址
-      for (const cookie of selectedCookies) {
+      for (const cookieStr of source.cookie) {
+        const [name, value] = cookieStr.split('=');
         await browser.cookies.set({
-          url: `http://${currentUrl.value}`,
-          name: cookie.name,
-          value: cookie.value,
-          domain: currentUrl.value,
+          url: currentUrl.value,
+          name,
+          value,
+          domain: new URL(currentUrl.value).hostname,
           path: "/",
         });
       }
     }
 
     // 刷新当前页面的cookie列表
-    const cookies = await browser.cookies.getAll({ domain: currentUrl.value });
+    const cookies = await browser.cookies.getAll({ 
+      domain: new URL(currentUrl.value).hostname 
+    });
     cookieList.value = cookies.map((cookie) => ({
       name: cookie.name,
       value: cookie.value,
@@ -86,6 +84,10 @@ const handleSync = async () => {
     ElMessage.error("同步失败");
   }
 };
+
+onMounted(() => {
+  initCurrentPage();
+});
 </script>
 
 <template>
@@ -113,12 +115,15 @@ const handleSync = async () => {
       <div class="mb-4">
         <h3 class="font-bold mb-2">已保存的规则：</h3>
         <div class="pl-4">
-          <!-- <div v-for="item in currentRule.list" :key="item.host" class="mb-2">
+          <div v-for="item in currentRule.list" :key="item.host" class="mb-2">
             <div class="font-bold">{{ item.host }}</div>
             <div class="text-gray-600 pl-4">
-              选中的 Cookies: {{ item.cookie.join(", ") }}
+              选中的 Cookies: 
+              <div v-for="cookie in item.cookie" :key="cookie" class="pl-2">
+                {{ cookie }}
+              </div>
             </div>
-          </div> -->
+          </div>
         </div>
       </div>
 

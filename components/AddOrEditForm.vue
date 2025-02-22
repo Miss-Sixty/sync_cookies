@@ -78,7 +78,7 @@ defineExpose({
         <el-form-item
           label="cookies"
           :prop="`list.${i}.cookie`"
-          :rules="[{ required: true, message: '请选择cookies' }]"
+          :rules="[{ required: true, message: '请选择cookies', type: 'array' }]"
         >
           <el-checkbox-group v-model="item.cookie">
             <el-checkbox
