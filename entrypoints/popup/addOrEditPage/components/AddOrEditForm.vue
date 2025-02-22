@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { Delete, Plus, Link, Refresh, Document } from "@element-plus/icons-vue";
+import { Delete, Plus, Link, Refresh } from "@element-plus/icons-vue";
 import { ElForm } from "element-plus";
-import { PropType } from "vue";
-import { FormData, ListItem } from "../../../../types";
-import CardSection from "../../../../components/CardSection.vue";
+import {} from "vue";
+import { FormData } from "../../../../types";
 
 const formData = defineModel<FormData>({
   default: {

@@ -90,10 +90,10 @@ const validateForm = async () => {
 const handleSave = async () => {
   try {
     await store.handleSave(formData.value, type.value as string);
-    toast.success(`${typeText}成功`);
+    toast.success(`${typeText.value}成功`);
     router.back();
   } catch (e) {
-    toast.error(`${typeText}失败：${e}`);
+    toast.error(`${typeText.value}失败：${e}`);
   }
 };
 </script>

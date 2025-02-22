@@ -52,28 +52,47 @@ const handleSync = async () => {
 
   try {
     syncing.value = true;
-    for (const source of currentRule.value.list) {
-      const url = new URL(
-        source.host.startsWith("http") ? source.host : `http://${source.host}`
-      );
-      const sourceCookies = await browser.cookies.getAll({
-        domain: url.hostname,
-      });
+    const targetHostname = new URL(currentUrl.value).hostname;
 
-      for (const cookieStr of source.cookie) {
-        const [name, value] = cookieStr.split("=");
-        await browser.cookies.set({
+    // 1. 获取当前所有 cookies
+    const currentCookies = await browser.cookies.getAll({
+      domain: targetHostname,
+    });
+
+    // 2. 获取需要同步的 cookie 映射（使用最后一个出现的值）
+    const cookiesToSync = new Map(
+      currentRule.value.list.flatMap(source => 
+        source.cookie.map(cookieStr => {
+          const [name, value] = cookieStr.split('=');
+          return [name, value];
+        })
+      )
+    );
+
+    // 3. 删除不在同步列表中的 cookies
+    for (const cookie of currentCookies) {
+      if (!cookiesToSync.has(cookie.name)) {
+        await browser.cookies.remove({
           url: currentUrl.value,
-          name,
-          value,
-          domain: new URL(currentUrl.value).hostname,
-          path: "/",
+          name: cookie.name,
         });
       }
     }
 
+    // 4. 同步新的 cookies（不重复）
+    for (const [name, value] of cookiesToSync) {
+      await browser.cookies.set({
+        url: currentUrl.value,
+        name,
+        value,
+        domain: targetHostname,
+        path: "/",
+      });
+    }
+
+    // 5. 更新显示的 cookie 列表
     const cookies = await browser.cookies.getAll({
-      domain: new URL(currentUrl.value).hostname,
+      domain: targetHostname,
     });
     cookieList.value = cookies.map((cookie) => ({
       name: cookie.name,
@@ -82,6 +101,7 @@ const handleSync = async () => {
 
     toast.success("同步成功");
   } catch (e) {
+    console.error('Sync error:', e);
     toast.error(`同步失败: ${e}`);
   } finally {
     syncing.value = false;

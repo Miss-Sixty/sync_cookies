@@ -39,13 +39,11 @@ export const useRuleStore = defineStore('rules', {
 const editData = async (data: CookieRule[], index: number, saveData: CookieRule) => {
   data[index] = saveData;
   await storage.setItem(STORAGE_KEY, data);
-  ElMessage.success("修改成功");
   return Promise.resolve();
 };
 
 const addData = async (data: CookieRule[], saveData: CookieRule) => {
   data.push(saveData);
   await storage.setItem(STORAGE_KEY, data);
-  ElMessage.success("添加成功");
   return Promise.resolve();
 };
