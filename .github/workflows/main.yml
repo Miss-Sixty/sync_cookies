@@ -60,7 +60,6 @@ jobs:
           
       - name: Create Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')  # 只在有标签时创建发布
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
