@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "sync_cookies",
   "description": "manifest.json description",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "icons": {
     "16": "icon/16.png",
     "32": "icon/32.png",
@@ -11,15 +11,14 @@
     "128": "icon/128.png"
   },
   "permissions": [
-    "tabs",
+    "activeTab",
     "cookies",
     "storage",
-    "activeTab",
+    "tabs",
     "scripting"
   ],
   "host_permissions": [
     "*://*/*",
-    "*://*.google.com/*",
     "http://localhost/*"
   ],
   "commands": {

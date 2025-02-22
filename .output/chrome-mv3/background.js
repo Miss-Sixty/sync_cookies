@@ -98,6 +98,11 @@ var background = function() {
         `If using a wildcard (*), it must go at the start of the hostname`
       );
   }
+  const definition = defineBackground(() => {
+  });
+  background;
+  function initPlugins() {
+  }
   const browser = (
     // @ts-expect-error
     ((_b = (_a = globalThis.browser) == null ? void 0 : _a.runtime) == null ? void 0 : _b.id) == null ? globalThis.chrome : (
@@ -105,54 +110,6 @@ var background = function() {
       globalThis.browser
     )
   );
-  const definition = defineBackground(() => {
-    const STORAGE_KEY = "cookie_rules";
-    async function saveRule(rule) {
-      const rules = await browser.storage.local.get(STORAGE_KEY);
-      const existingRules = rules[STORAGE_KEY] || [];
-      const index = existingRules.findIndex((r) => r.targetHost === rule.targetHost);
-      if (index !== -1) {
-        existingRules[index] = rule;
-      } else {
-        existingRules.push(rule);
-      }
-      await browser.storage.local.set({ [STORAGE_KEY]: existingRules });
-    }
-    async function getRules() {
-      const rules = await browser.storage.local.get(STORAGE_KEY);
-      return rules[STORAGE_KEY] || [];
-    }
-    async function deleteRule(targetHost) {
-      const rules = await browser.storage.local.get(STORAGE_KEY);
-      const existingRules = rules[STORAGE_KEY] || [];
-      const newRules = existingRules.filter((r) => r.targetHost !== targetHost);
-      await browser.storage.local.set({ [STORAGE_KEY]: newRules });
-    }
-    async function updateRulesOrder(newRules) {
-      await browser.storage.local.set({ [STORAGE_KEY]: newRules });
-    }
-    browser.runtime.onMessage.addListener(async (message) => {
-      switch (message.type) {
-        case "saveRule":
-          await saveRule(message.data);
-          return true;
-        case "getRules":
-          return await getRules();
-        case "deleteRule":
-          await deleteRule(message.data.targetHost);
-          return true;
-        case "updateRulesOrder":
-          await updateRulesOrder(message.data);
-          return true;
-        default:
-          return false;
-      }
-    });
-    console.log("Background script initialized");
-  });
-  background;
-  function initPlugins() {
-  }
   function print(method, ...args) {
     if (typeof args[0] === "string") {
       const message = args.shift();

@@ -13,13 +13,12 @@ export default defineConfig({
   modules: ['@wxt-dev/module-vue'],
   manifest: {
     permissions: [
-      "tabs",
-      "cookies",
-      "storage",
-      "activeTab"
+      "activeTab",  // 这个权限允许我们访问当前标签页的所有信息，包括 cookies
+      "cookies",    // 用于操作 cookies
+      "storage"     // 用于存储规则
     ],
     host_permissions: [
-      "*://*/*"  // 允许访问所有网站的cookies
+      "*://*/*"  // 允许访问所有网站的 cookies
     ]
   },
   vite: () => ({
