@@ -13,7 +13,7 @@ const goBack = () => {
 </script>
 
 <template>
-  <el-page-header @back="goBack" class="bt-1 mb-2" title="返回">
+  <el-page-header @back="goBack" class="px-4 py-2.5" title="返回">
     <template #content>
       <span class="text-large font-600 mr-3"> {{ title }} </span>
     </template>

@@ -81,8 +81,8 @@ const handleSync = async () => {
     }));
 
     toast.success("同步成功");
-  } catch (error) {
-    toast.error("同步失败");
+  } catch (e) {
+    toast.error(`同步失败: ${e}`);
   } finally {
     syncing.value = false;
   }
@@ -94,7 +94,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-gray-100">
+  <div class="flex flex-col h-full">
     <PageHeader
       :current-url="currentUrl"
       :syncing="syncing"

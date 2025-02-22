@@ -6,12 +6,10 @@ import { storage } from "wxt/storage";
 import { useRouter } from "vue-router";
 import Header from "../../components/Header.vue";
 import { useRuleStore } from "../../stores/rules";
-import { CookieRule } from '../../types';
-import { STORAGE_KEY } from './config';
+import { CookieRule } from "../../types";
+import { STORAGE_KEY } from "./config";
+import { toast } from "vue-sonner";
 const store = useRuleStore();
-
-const modelValue = defineModel();
-const editData = ref<CookieRule>();
 const rules = ref<CookieRule[]>([]);
 const router = useRouter();
 
@@ -20,11 +18,11 @@ const loadRules = async () => {
   try {
     const result = await storage.getItem<CookieRule[]>(STORAGE_KEY);
     rules.value = result || [];
-  } catch (error) {
-    console.error("Load rules error:", error);
-    ElMessage.error("加载规则失败");
+  } catch (e) {
+    toast.error(`加载规则失败: ${e}`);
   }
 };
+loadRules();
 
 // 保存规则列表
 const saveRules = async (newRules: CookieRule[]) => {
@@ -44,10 +42,9 @@ const handleDelete = async (rule: CookieRule) => {
     );
     await saveRules(newRules);
     rules.value = newRules;
-    ElMessage.success("删除成功");
-  } catch (error) {
-    console.error("Delete rule error:", error);
-    ElMessage.error("删除失败");
+    toast.success("删除成功");
+  } catch (e) {
+    toast.error(`删除失败: ${e}`);
   }
 };
 
@@ -59,63 +56,37 @@ const handleEdit = (rule: CookieRule) => {
   });
 };
 
-// 添加按钮点击处理
-const handleAdd = () => {
-  router.push({ name: "add" });
-};
-
-// 返回首页
-const handleBack = () => {
-  router.push("/");
-};
-
 // 保存排序
 const handleSort = async () => {
   try {
     await saveRules(rules.value);
-    ElMessage.success("排序已保存");
-  } catch (error) {
-    console.error("Update order error:", error);
-    ElMessage.error("保存排序失败");
+    toast.success("排序已保存");
+  } catch (e) {
+    toast.error(`保存排序失败: ${e}`);
   }
 };
-
-// 监听模式变化
-watch(modelValue, (newValue) => {
-  if (newValue === "add" || newValue === "settings") {
-    // 清空编辑数据
-    editData.value = undefined;
-  }
-});
-
-// 组件挂载时加载规则
-onMounted(() => {
-  loadRules();
-});
 </script>
 
 <template>
   <Header title="设置">
     <template #extra>
-      <router-link to="/add" custom v-slot="{ navigate }">
-        <el-button type="primary" size="small" :icon="Plus" @click="navigate">
-          添 加
-        </el-button>
-      </router-link>
+      <el-button type="primary" :icon="Plus" @click="$router.push('/add')">
+        添加配置
+      </el-button>
     </template>
   </Header>
 
   <VueDraggable
     v-model="rules"
     :animation="150"
-    class="flex flex-col gap-2"
+    class="flex flex-col gap-2 px-4"
     handle=".drag-handle"
     @end="handleSort"
   >
     <div
       v-for="rule in rules"
       :key="rule.targetHost"
-      class="border rounded px-1 py-2 flex items-center"
+      class="bg-white rounded px-1.5 py-2 flex items-center"
     >
       <el-button
         title="排序"
@@ -131,7 +102,6 @@ onMounted(() => {
         </span>
       </span>
       <el-button
-        class="!px-1.5"
         title="修改"
         size="small"
         :icon="Edit"
@@ -141,7 +111,7 @@ onMounted(() => {
       <el-popconfirm title="确定要删除吗？" @confirm="handleDelete(rule)">
         <template #reference>
           <el-button
-            class="!px-1.5 !ml-0"
+            class="!ml-0"
             title="删除"
             size="small"
             :icon="Delete"
