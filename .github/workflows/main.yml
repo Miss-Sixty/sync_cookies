@@ -40,19 +40,28 @@ jobs:
         
       - name: Build and zip
         run: |
+          mkdir -p .output
           pnpm run build &&
           pnpm run build:firefox &&
           pnpm run zip &&
           pnpm run zip:firefox
           
+      # 添加检查步骤
+      - name: List files
+        run: |
+          echo "Content of .output directory:"
+          ls -la .output/
+          
       - name: Create Release
         uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')  # 只在有标签时创建发布
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: "v${{ steps.get_version.outputs.version }}"
           name: "v${{ steps.get_version.outputs.version }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
           files: |
-            .output/${{env.PROJECT_NAME}}-${{ steps.get_version.outputs.version }}-chrome.zip
-            .output/${{env.PROJECT_NAME}}-${{ steps.get_version.outputs.version }}-firefox.zip
-            .output/${{env.PROJECT_NAME}}-${{ steps.get_version.outputs.version }}-sources.zip
+            .output/*.zip
