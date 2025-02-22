@@ -4,6 +4,10 @@ on:
   push:
     branches: ["main"]
 
+# 添加权限配置
+permissions:
+  contents: write
+
 env:
   PROJECT_NAME: cookie-sync
 
