@@ -29,14 +29,13 @@ defineEmits<{
       type="primary"
       @click="$emit('sync')"
       :loading="syncing"
-      size="small"
       :icon="Refresh"
     >
       同步
     </el-button>
 
     <router-link to="/settings" custom v-slot="{ navigate }">
-      <el-button @click="navigate" size="small" :icon="Setting" />
+      <el-button @click="navigate" :icon="Setting" />
     </router-link>
   </div>
 </template>

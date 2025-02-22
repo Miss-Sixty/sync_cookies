@@ -1,9 +1,18 @@
 <script setup lang="ts">
-// 移除不需要的导入和代码
+import { Toaster } from "vue-sonner";
+import { CircleCheckFilled, CircleCloseFilled } from "@element-plus/icons-vue";
 </script>
 
 <template>
-  <div class="w-[550px] h-[400px] flex flex-col">
+  <Toaster position="bottom-right" offset="16px">
+    <template #success-icon>
+      <el-icon size="16" color="#67C23A"><CircleCheckFilled /></el-icon>
+    </template>
+    <template #error-icon>
+      <el-icon size="16" color="#F56C6C"><CircleCloseFilled /></el-icon>
+    </template>
+  </Toaster>
+  <div class="w-[601px] h-[400px] flex flex-col">
     <router-view></router-view>
   </div>
 </template>

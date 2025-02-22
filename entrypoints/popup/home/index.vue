@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { storage } from "wxt/storage";
-import { useRouter } from "vue-router";
 import { CookieRule } from "../../../types";
 import { STORAGE_KEY } from "../config";
 import PageHeader from "./components/PageHeader.vue";
 import EmptyState from "./components/EmptyState.vue";
 import CookieList from "./components/CookieList.vue";
 import RuleList from "./components/RuleList.vue";
+import { toast } from "vue-sonner";
 
-const router = useRouter();
 const currentUrl = ref("");
 const currentRule = ref<CookieRule>();
 const cookieList = ref<{ name: string; value: string }[]>([]);
@@ -81,10 +80,9 @@ const handleSync = async () => {
       value: cookie.value,
     }));
 
-    ElMessage.success("同步成功");
+    toast.success("同步成功");
   } catch (error) {
-    console.error("Sync error:", error);
-    ElMessage.error("同步失败");
+    toast.error("同步失败");
   } finally {
     syncing.value = false;
   }
