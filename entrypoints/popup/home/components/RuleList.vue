@@ -10,23 +10,32 @@ defineProps<{
 
 <template>
   <CardSection title="来源网站" :icon="Document" :count="rules.length">
-    <div class="space-y-1.5">
-      <div
-        v-for="item in rules"
-        :key="item.host"
-        class="rounded-lg shadow-sm px-3 py-2 bg-white"
-      >
-        <span class="font-medium">{{ item.host }}</span>
-        <div class="grid grid-cols-2 gap-1.5">
-          <div
-            v-for="cookie in item.cookie"
-            :key="cookie"
-            class="text-xs text-gray-500 truncate"
-            :title="cookie"
-          >
-            {{ cookie }}
+    <div class="px-4 pb-3">
+      <div class="space-y-2">
+        <div
+          v-for="item in rules"
+          :key="item.host"
+          class="bg-gray-50 rounded p-3"
+        >
+          <div class="flex items-center gap-2 mb-2">
+            <el-icon><Link /></el-icon>
+            <span class="font-medium">{{ item.host }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div
+              v-for="cookie in item.cookie"
+              :key="cookie"
+              class="bg-white rounded px-2.5 py-1.5 text-xs text-gray-600"
+            >
+              {{ cookie }}
+            </div>
           </div>
         </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div v-if="!rules.length" class="text-center text-gray-400 py-4 text-sm">
+        暂无来源网站配置
       </div>
     </div>
   </CardSection>
