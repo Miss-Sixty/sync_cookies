@@ -1,20 +1,30 @@
 <script lang="ts" setup>
-import { ElForm, ElMessage, ElMessageBox } from "element-plus";
-import { storage } from "wxt/storage";
-import { useRouter } from "vue-router";
+import { ElForm } from "element-plus";
+import { useRouter, useRoute } from "vue-router";
 import Header from "../../components/Header.vue";
 import AddOrEditForm from "../../components/AddOrEditForm.vue";
 import { useRuleStore } from "../../stores/rules";
-import { Cookie, ListItem, FormData } from '../../types';
-const store = useRuleStore();
-
-const formData = ref<FormData>({
-  targetHost: "",
-  list: [{ host: "", cookie: [], availableCookies: [] }],
-});
+import { FormData } from "../../types";
+import { toast } from "vue-sonner";
 
 const router = useRouter();
+const route = useRoute();
+const store = useRuleStore();
 const formRef = ref<InstanceType<typeof ElForm>>();
+
+// 根据路由判断是新建还是编辑
+const type = computed(() => route.name);
+const typeText = computed(() => (type.value === "edit" ? "修改" : "添加"));
+
+// 表单数据
+const formData = ref<FormData>(
+  type.value === "edit"
+    ? store.editingRule
+    : {
+        targetHost: "",
+        list: [{ host: "", cookie: [], availableCookies: [] }],
+      }
+);
 
 // 获取指定网址的所有cookies
 const getCookies = async (host: string) => {
@@ -45,13 +55,14 @@ watch(
         formData.value.list[i].cookie = []; // 重置选中的cookies
       }
     }
-  }
+  },
+  { deep: true }
 );
 
 // 获取当前网址
 const getCurrentTab = async () => {
   const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-  if (!tabs[0]?.url) return "";
+  if (!tabs[0]?.url) return;
   try {
     const url = new URL(tabs[0].url);
     formData.value.targetHost = url.origin;
@@ -59,32 +70,34 @@ const getCurrentTab = async () => {
     console.error("Invalid URL:", e);
   }
 };
-getCurrentTab();
+if (type.value === "add") getCurrentTab();
 
-// 保存表单数据
+// 表单验证和保存
 const validateForm = async () => {
   try {
     await formRef.value?.validate();
     if (!formData.value.list.length) {
-      ElMessage.error("请至少添加一个来源");
+      toast.error("请至少添加一个来源");
       return;
     }
     handleSave();
   } catch (e) {}
 };
+
 // 保存表单数据
 const handleSave = async () => {
   try {
-    await store.handleSave(formData.value);
+    await store.handleSave(formData.value, type.value as string);
+    toast.success(`${typeText}成功`);
     router.back();
   } catch (e) {
-    ElMessage.error(`添加失败：${e}`);
+    toast.error(`${typeText}失败：${e}`);
   }
 };
 </script>
 
 <template>
-  <Header title="添加">
+  <Header :title="typeText">
     <template #extra>
       <el-button type="primary" class="!px-2 !h-7" @click="validateForm">
         保 存

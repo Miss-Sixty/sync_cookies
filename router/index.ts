@@ -1,7 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import settingsPage from '../entrypoints/popup/settingsPage.vue';
-import addPage from '../entrypoints/popup/addPage.vue';
-import editPage from '../entrypoints/popup/editPage.vue';
+import addOrEditPage from '../entrypoints/popup/addOrEditPage.vue';
 import home from '../entrypoints/popup/home/index.vue';
 
 const routes = [
@@ -18,12 +17,12 @@ const routes = [
   {
     path: '/add',
     name: 'add',
-    component: addPage
+    component: addOrEditPage
   },
   {
     path: '/edit',
     name: 'edit',
-    component: editPage,
+    component: addOrEditPage,
   }
 ];
 
