@@ -8,7 +8,13 @@ import CardSection from "../../../../components/CardSection.vue";
 const formData = defineModel<FormData>({
   default: {
     targetHost: "",
-    list: [{ host: "", cookie: [], availableCookies: [] }],
+    list: [{ 
+      host: "", 
+      cookie: [], 
+      availableCookies: [],
+      checkAll: false,
+      isIndeterminate: false 
+    }],
   },
 });
 
@@ -42,7 +48,45 @@ const handleDel = (i: number) => {
   formData.value.list.splice(realIndex, 1);
 };
 
-// 修改刷新方法，需要处理倒序后的索引
+// 处理全选
+const handleCheckAllChange = (index: number) => {
+  const realIndex = formData.value.list.length - 1 - index;
+  const item = formData.value.list[realIndex];
+  
+  if (!item.availableCookies?.length) return;
+  
+  item.cookie = item.checkAll 
+    ? item.availableCookies.map(c => c.value)
+    : [];
+  item.isIndeterminate = false;
+};
+
+// 处理选择变化
+const handleCheckedChange = (index: number) => {
+  const realIndex = formData.value.list.length - 1 - index;
+  const item = formData.value.list[realIndex];
+  
+  if (!item.availableCookies?.length) return;
+  
+  const checkedCount = item.cookie.length;
+  const totalCount = item.availableCookies.length;
+  
+  item.checkAll = checkedCount === totalCount;
+  item.isIndeterminate = checkedCount > 0 && checkedCount < totalCount;
+};
+
+// 修改添加方法，初始化选择状态
+const handleAdd = () => {
+  formData.value.list.push({ 
+    host: "", 
+    cookie: [], 
+    availableCookies: [],
+    checkAll: false,
+    isIndeterminate: false 
+  });
+};
+
+// 修改刷新方法，重置选择状态
 const refreshCookies = async (i: number) => {
   const realIndex = formData.value.list.length - 1 - i;
   if (!formData.value.list[realIndex].host) {
@@ -52,8 +96,13 @@ const refreshCookies = async (i: number) => {
   loadingCookies.value[realIndex] = true;
   try {
     const cookies = await getCookies(formData.value.list[realIndex].host);
-    formData.value.list[realIndex].availableCookies = cookies;
-    formData.value.list[realIndex].cookie = []; // 重置选中的cookies
+    formData.value.list[realIndex] = {
+      ...formData.value.list[realIndex],
+      availableCookies: cookies,
+      cookie: [], // 重置选中的cookies
+      checkAll: false,
+      isIndeterminate: false
+    };
   } catch (e) {
     console.error(e);
     ElMessage.error("获取 Cookies 失败");
@@ -62,9 +111,25 @@ const refreshCookies = async (i: number) => {
   }
 };
 
-const handleAdd = () => {
-  formData.value.list.push({ host: "", cookie: [], availableCookies: [] });
-};
+// 监听 host 变化
+watch(
+  () => formData.value.list.map((item) => item.host),
+  async (newHosts, oldHosts) => {
+    for (let i = 0; i < newHosts.length; i++) {
+      if (newHosts[i] !== oldHosts?.[i]) {
+        const cookies = await getCookies(newHosts[i]);
+        formData.value.list[i] = {
+          ...formData.value.list[i],
+          availableCookies: cookies,
+          cookie: [], // 重置选中的cookies
+          checkAll: false,
+          isIndeterminate: false
+        };
+      }
+    }
+  },
+  { deep: true }
+);
 
 const formRef = ref<InstanceType<typeof ElForm>>();
 defineExpose({ formRef, validate: () => formRef.value?.validate() });
@@ -177,22 +242,21 @@ defineExpose({ formRef, validate: () => formRef.value?.validate() });
             class="!mb-0"
           >
             <div class="bg-gray-50 rounded-lg overflow-hidden">
-              <div class="p-2 border-b flex justify-between items-center">
-                <span class="text-sm text-gray-500">可用的 Cookies</span>
-                <el-button
-                  type="primary"
-                  size="small"
-                  link
-                  @click="
-                    item.cookie =
-                      item.availableCookies?.map((c) => c.value) || []
-                  "
+              <div class="p-2 border-b flex items-center">
+                <el-checkbox
+                  v-model="item.checkAll"
+                  :indeterminate="item.isIndeterminate"
+                  @change="handleCheckAllChange(i)"
+                  class="!mr-0"
                 >
-                  全选
-                </el-button>
+                  <span class="text-sm text-gray-500">可用的 Cookies</span>
+                </el-checkbox>
               </div>
               <div class="p-3 max-h-40 overflow-auto">
-                <el-checkbox-group v-model="item.cookie">
+                <el-checkbox-group 
+                  v-model="item.cookie"
+                  @change="handleCheckedChange(i)"
+                >
                   <div class="space-y-2">
                     <el-checkbox
                       v-for="cookie in item.availableCookies"

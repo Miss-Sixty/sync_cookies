@@ -6,6 +6,8 @@ export interface ListItem {
   host: string;
   cookie: string[];
   availableCookies?: Cookie[];
+  checkAll?: boolean;
+  isIndeterminate?: boolean;
 }
 
 export interface FormData {
