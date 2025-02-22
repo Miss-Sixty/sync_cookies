@@ -4,7 +4,7 @@ import { ElIcon } from "element-plus";
 defineProps<{
   title: string;
   count?: number;
-  icon: Component;
+  icon?: Component;
 }>();
 </script>
 

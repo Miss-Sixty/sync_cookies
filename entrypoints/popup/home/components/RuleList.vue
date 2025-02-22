@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Document, Link } from "@element-plus/icons-vue";
 import { ListItem } from "../../../../types";
-import CardSection from ".//CardSection.vue";
+import CardSection from "../../../../components/CardSection.vue";
 
 defineProps<{
   rules: ListItem[];

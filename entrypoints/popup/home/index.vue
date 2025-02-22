@@ -23,7 +23,7 @@ const initCurrentPage = async () => {
     if (!tabs[0]?.url) return;
 
     const url = new URL(tabs[0].url);
-    currentUrl.value = url.origin;
+    currentUrl.value = url.href;
 
     const rules = (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
     currentRule.value = rules.find(

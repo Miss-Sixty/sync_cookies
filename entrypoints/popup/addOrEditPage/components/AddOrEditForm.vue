@@ -2,7 +2,8 @@
 import { Delete } from "@element-plus/icons-vue";
 import { ElForm } from "element-plus";
 import { PropType } from "vue";
-import { Cookie, ListItem, FormData } from '../types';
+import { FormData } from "../../../../types";
+import CardSection from "../../../../components/CardSection.vue";
 
 const formData = defineModel<FormData>({
   default: {
@@ -44,21 +45,28 @@ defineExpose({
     :model="formData"
     label-width="auto"
     class="overflow-hidden flex flex-col flex-1"
+    hide-required-asterisk
+    status-icon
+    :show-message="false"
   >
     <el-form-item
       prop="targetHost"
+      class="bg-white px-4 py-2 rounded mx-4"
       label="目标网址"
-      :rules="[{ required: true, message: '请输入目标网址' }]"
+      :rules="{ required: true }"
     >
-      <el-input v-model="formData.targetHost" />
+      <el-input placeholder="请输入目标网址" v-model="formData.targetHost" />
     </el-form-item>
     <el-scrollbar>
-      <template v-for="(item, i) in formData.list" :key="i">
-        <el-divider content-position="left">来源{{ i + 1 }}</el-divider>
+      <CardSection
+        v-for="(item, i) in formData.list"
+        :key="i"
+        :title="'来源' + (i + 1)"
+      >
         <el-form-item
           label="网址"
           :prop="`list.${i}.host`"
-          :rules="[{ required: true, message: '请输入网址' }]"
+          :rules="{ required: true }"
         >
           <div class="flex w-full items-center gap-1">
             <el-input
@@ -78,7 +86,7 @@ defineExpose({
         <el-form-item
           label="cookies"
           :prop="`list.${i}.cookie`"
-          :rules="[{ required: true, message: '请选择cookies', type: 'array' }]"
+          :rules="{ required: true, type: 'array' }"
         >
           <el-checkbox-group v-model="item.cookie">
             <el-checkbox
@@ -90,16 +98,16 @@ defineExpose({
             </el-checkbox>
           </el-checkbox-group>
         </el-form-item>
-      </template>
+      </CardSection>
     </el-scrollbar>
     <el-button @click="handleAdd">添加来源</el-button>
   </el-form>
 </template>
 
 <style>
-@reference "../entrypoints/popup/style.css";
+@reference "../../style.css";
 
 .el-form-item {
-  @apply mb-1;
+  @apply !mb-0;
 }
 </style>

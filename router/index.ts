@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import settingsPage from '../entrypoints/popup/settingsPage.vue';
-import addOrEditPage from '../entrypoints/popup/addOrEditPage.vue';
+import addOrEditPage from '../entrypoints/popup/addOrEditPage/index.vue';
 import home from '../entrypoints/popup/home/index.vue';
 
 const routes = [

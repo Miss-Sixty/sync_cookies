@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { ElForm } from "element-plus";
 import { useRouter, useRoute } from "vue-router";
-import Header from "../../components/Header.vue";
-import AddOrEditForm from "../../components/AddOrEditForm.vue";
-import { useRuleStore } from "../../stores/rules";
-import { FormData } from "../../types";
+import Header from "../../../components/Header.vue";
+import AddOrEditForm from "./components/AddOrEditForm.vue";
+import { useRuleStore } from "../../../stores/rules";
+import { FormData } from "../../../types";
 import { toast } from "vue-sonner";
 
 const router = useRouter();
@@ -65,7 +65,9 @@ const getCurrentTab = async () => {
   if (!tabs[0]?.url) return;
   try {
     const url = new URL(tabs[0].url);
-    formData.value.targetHost = url.origin;
+    console.log(111, url);
+
+    formData.value.targetHost = url?.href || "";
   } catch (e) {
     console.error("Invalid URL:", e);
   }
@@ -99,11 +101,8 @@ const handleSave = async () => {
 <template>
   <Header :title="typeText">
     <template #extra>
-      <el-button type="primary" class="!px-2 !h-7" @click="validateForm">
-        保 存
-      </el-button>
+      <el-button type="primary" @click="validateForm"> 保 存 </el-button>
     </template>
   </Header>
-
   <AddOrEditForm ref="formRef" v-model="formData" />
 </template>
