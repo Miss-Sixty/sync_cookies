@@ -103,7 +103,7 @@ onMounted(() => {
 
     <EmptyState v-if="!currentRule" @add="$router.push('/add')" />
 
-    <el-scrollbar v-else class="flex-1 px-2" view-class="pb-4">
+    <el-scrollbar v-else class="flex-1 px-4" view-class="pb-4">
       <CookieList :cookies="cookieList" />
       <RuleList :rules="currentRule.list" />
     </el-scrollbar>

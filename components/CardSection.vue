@@ -9,8 +9,8 @@ defineProps<{
 </script>
 
 <template>
-  <div class="px-2">
-    <div class="flex items-center pt-4 pb-2 gap-1">
+  <div class="rounded-lg shadow-sm bg-white mt-2">
+    <div class="flex items-center px-4 py-2 gap-1 font-medium">
       <el-icon><component :is="icon" /></el-icon>
       {{ title }}
       <span v-if="count !== undefined" class="text-gray-400">

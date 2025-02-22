@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Delete, Plus, Link, Refresh } from "@element-plus/icons-vue";
+import { Delete, Plus, Link, Refresh, Document } from "@element-plus/icons-vue";
 import { ElForm } from "element-plus";
 import { PropType } from "vue";
 import { FormData, ListItem } from "../../../../types";
@@ -8,13 +8,15 @@ import CardSection from "../../../../components/CardSection.vue";
 const formData = defineModel<FormData>({
   default: {
     targetHost: "",
-    list: [{ 
-      host: "", 
-      cookie: [], 
-      availableCookies: [],
-      checkAll: false,
-      isIndeterminate: false 
-    }],
+    list: [
+      {
+        host: "",
+        cookie: [],
+        availableCookies: [],
+        checkAll: false,
+        isIndeterminate: false,
+      },
+    ],
   },
 });
 
@@ -52,12 +54,10 @@ const handleDel = (i: number) => {
 const handleCheckAllChange = (index: number) => {
   const realIndex = formData.value.list.length - 1 - index;
   const item = formData.value.list[realIndex];
-  
+
   if (!item.availableCookies?.length) return;
-  
-  item.cookie = item.checkAll 
-    ? item.availableCookies.map(c => c.value)
-    : [];
+
+  item.cookie = item.checkAll ? item.availableCookies.map((c) => c.value) : [];
   item.isIndeterminate = false;
 };
 
@@ -65,24 +65,24 @@ const handleCheckAllChange = (index: number) => {
 const handleCheckedChange = (index: number) => {
   const realIndex = formData.value.list.length - 1 - index;
   const item = formData.value.list[realIndex];
-  
+
   if (!item.availableCookies?.length) return;
-  
+
   const checkedCount = item.cookie.length;
   const totalCount = item.availableCookies.length;
-  
+
   item.checkAll = checkedCount === totalCount;
   item.isIndeterminate = checkedCount > 0 && checkedCount < totalCount;
 };
 
 // 修改添加方法，初始化选择状态
 const handleAdd = () => {
-  formData.value.list.push({ 
-    host: "", 
-    cookie: [], 
+  formData.value.list.push({
+    host: "",
+    cookie: [],
     availableCookies: [],
     checkAll: false,
-    isIndeterminate: false 
+    isIndeterminate: false,
   });
 };
 
@@ -101,7 +101,7 @@ const refreshCookies = async (i: number) => {
       availableCookies: cookies,
       cookie: [], // 重置选中的cookies
       checkAll: false,
-      isIndeterminate: false
+      isIndeterminate: false,
     };
   } catch (e) {
     console.error(e);
@@ -123,7 +123,7 @@ watch(
           availableCookies: cookies,
           cookie: [], // 重置选中的cookies
           checkAll: false,
-          isIndeterminate: false
+          isIndeterminate: false,
         };
       }
     }
@@ -241,40 +241,46 @@ defineExpose({ formRef, validate: () => formRef.value?.validate() });
             :rules="{ required: true, type: 'array' }"
             class="!mb-0"
           >
-            <div class="bg-gray-50 rounded-lg overflow-hidden">
-              <div class="p-2 border-b flex items-center">
-                <el-checkbox
-                  v-model="item.checkAll"
-                  :indeterminate="item.isIndeterminate"
-                  @change="handleCheckAllChange(i)"
-                  class="!mr-0"
-                >
-                  <span class="text-sm text-gray-500">可用的 Cookies</span>
-                </el-checkbox>
-              </div>
-              <div class="p-3 max-h-40 overflow-auto">
-                <el-checkbox-group 
-                  v-model="item.cookie"
-                  @change="handleCheckedChange(i)"
-                >
-                  <div class="space-y-2">
-                    <el-checkbox
-                      v-for="cookie in item.availableCookies"
-                      :key="cookie.value"
-                      :label="cookie.value"
-                      class="!w-full"
-                    >
-                      <div class="truncate text-sm">{{ cookie.value }}</div>
-                    </el-checkbox>
-                  </div>
-                </el-checkbox-group>
-                <div
-                  v-if="!item.availableCookies?.length"
-                  class="text-center text-gray-400 py-2"
-                >
-                  请输入网址获取可用的 Cookies
+            <div class="w-full mt-1">
+              <el-checkbox
+                v-model="item.checkAll"
+                :indeterminate="item.isIndeterminate"
+                @change="handleCheckAllChange(i)"
+                class="!mr-0 !p-0"
+              >
+                <span class="text-sm">全选</span>
+              </el-checkbox>
+
+              <!-- Cookie 列表 -->
+              <el-checkbox-group
+                v-model="item.cookie"
+                @change="handleCheckedChange(i)"
+              >
+                <div class="grid grid-cols-3 gap-2">
+                  <el-checkbox
+                    v-for="cookie in item.availableCookies"
+                    :key="cookie.value"
+                    :label="cookie.value"
+                    class="!m-0 !p-0 overflow-hidden"
+                    size="large"
+                  >
+                    <div class="flex flex-col overflow-hidden">
+                      <div
+                        class="font-medium text-sm truncate"
+                        :title="cookie.value.split('=')[0]"
+                      >
+                        {{ cookie.value.split("=")[0] }}
+                      </div>
+                      <div
+                        class="text-xs text-gray-400 truncate"
+                        :title="cookie.value.split('=')[1]"
+                      >
+                        {{ cookie.value.split("=")[1] }}
+                      </div>
+                    </div>
+                  </el-checkbox>
                 </div>
-              </div>
+              </el-checkbox-group>
             </div>
           </el-form-item>
         </div>
@@ -289,27 +295,8 @@ defineExpose({ formRef, validate: () => formRef.value?.validate() });
 </template>
 
 <style scoped>
-:deep(.el-checkbox) {
-  --el-checkbox-bg-color: white;
-  margin-right: 0;
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-:deep(.el-checkbox:hover) {
-  background-color: var(--el-fill-color-light);
-}
-
-:deep(.el-checkbox.is-checked) {
-  background-color: var(--el-color-primary-light-9);
-}
-
-:deep(.el-input-group__append) {
-  padding: 0;
-}
-
-:deep(.el-form-item__label) {
-  padding-bottom: 4px;
+@import "../../style.css";
+:deep(.el-checkbox__label) {
+  @apply overflow-hidden;
 }
 </style>
