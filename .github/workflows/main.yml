@@ -37,6 +37,12 @@ jobs:
         run: |
           VERSION=$(jq -r .version package.json)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # 添加创建 tag 的步骤
+      - name: Create Tag
+        run: |
+          git tag "v${{ steps.get_version.outputs.version }}"
+          git push origin "v${{ steps.get_version.outputs.version }}"
         
       - name: Build and zip
         run: |
