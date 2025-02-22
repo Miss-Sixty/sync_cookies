@@ -108,6 +108,52 @@ const handleSync = async () => {
   }
 };
 
+// 删除单个 cookie
+const handleDeleteCookie = async (name: string) => {
+  try {
+    const targetHostname = new URL(currentUrl.value).hostname;
+    await browser.cookies.remove({
+      url: currentUrl.value,
+      name,
+    });
+    
+    // 更新显示的 cookie 列表
+    const cookies = await browser.cookies.getAll({
+      domain: targetHostname,
+    });
+    cookieList.value = cookies.map((cookie) => ({
+      name: cookie.name,
+      value: cookie.value,
+    }));
+    
+    toast.success('删除成功');
+  } catch (e) {
+    console.error('Delete cookie error:', e);
+    toast.error('删除失败');
+  }
+};
+
+// 清除所有 cookies
+const handleClearCookies = async () => {
+  try {
+    const targetHostname = new URL(currentUrl.value).hostname;
+    
+    // 删除所有 cookies
+    for (const cookie of cookieList.value) {
+      await browser.cookies.remove({
+        url: currentUrl.value,
+        name: cookie.name,
+      });
+    }
+    
+    cookieList.value = [];
+    toast.success('清除成功');
+  } catch (e) {
+    console.error('Clear cookies error:', e);
+    toast.error('清除失败');
+  }
+};
+
 onMounted(() => {
   initCurrentPage();
 });
@@ -124,7 +170,11 @@ onMounted(() => {
     <EmptyState v-if="!currentRule" @add="$router.push('/add')" />
 
     <el-scrollbar v-else class="flex-1 px-4" view-class="pb-4">
-      <CookieList :cookies="cookieList" />
+      <CookieList 
+        :cookies="cookieList" 
+        @delete="handleDeleteCookie"
+        @clear="handleClearCookies"
+      />
       <RuleList :rules="currentRule.list" />
     </el-scrollbar>
   </div>

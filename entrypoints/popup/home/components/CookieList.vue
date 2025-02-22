@@ -1,10 +1,38 @@
 <script setup lang="ts">
-import { Collection } from "@element-plus/icons-vue";
+import { Collection, Delete } from "@element-plus/icons-vue";
 import CardSection from "../../../../components/CardSection.vue";
+import { ElMessageBox } from "element-plus";
 
-defineProps<{
+const props = defineProps<{
   cookies: { name: string; value: string }[];
 }>();
+
+const emit = defineEmits<{
+  delete: [name: string];
+  clear: [];
+}>();
+
+// 删除单个 cookie
+const handleDelete = (name: string) => {
+  ElMessageBox.confirm("确定要删除该 Cookie 吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  }).then(() => {
+    emit("delete", name);
+  });
+};
+
+// 清除所有 cookies
+const handleClear = () => {
+  ElMessageBox.confirm("确定要删除全部 Cookie 吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  }).then(() => {
+    emit("clear");
+  });
+};
 </script>
 
 <template>
@@ -13,17 +41,44 @@ defineProps<{
     :count="cookies.length"
     :icon="Collection"
   >
+    <template #extra>
+      <el-button
+        v-if="cookies.length"
+        type="danger"
+        size="small"
+        link
+        @click="handleClear"
+      >
+        清除全部
+      </el-button>
+    </template>
+
     <div class="px-4 pb-3">
       <div class="grid grid-cols-3 gap-2">
         <div
           v-for="cookie in cookies"
           :key="cookie.name"
-          class="bg-gray-100 rounded p-2 transition-colors"
+          class="bg-gray-100 rounded p-2 group"
         >
           <div class="flex flex-col">
-            <span class="font-medium text-sm truncate" :title="cookie.name">
-              {{ cookie.name }}
-            </span>
+            <!-- 名称行 -->
+            <div class="flex items-center justify-between mb-0.5 gap-2">
+              <span
+                class="font-medium text-sm truncate flex-1"
+                :title="cookie.name"
+              >
+                {{ cookie.name }}
+              </span>
+              <el-button
+                type="danger"
+                size="small"
+                :icon="Delete"
+                class="opacity-0 group-hover:opacity-100 transition-opacity"
+                @click.stop="handleDelete(cookie.name)"
+                link
+              />
+            </div>
+            <!-- 值行 -->
             <div class="text-xs text-gray-500 truncate" :title="cookie.value">
               {{ cookie.value }}
             </div>
@@ -41,3 +96,13 @@ defineProps<{
     </div>
   </CardSection>
 </template>
+
+<style scoped>
+.group:hover {
+  background-color: rgb(243 244 246);
+}
+
+:deep(.el-button--small) {
+  padding: 4px;
+}
+</style>

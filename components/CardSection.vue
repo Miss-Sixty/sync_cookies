@@ -10,12 +10,15 @@ defineProps<{
 
 <template>
   <div class="rounded-lg shadow-sm bg-white mt-2">
-    <div class="flex items-center px-4 py-2 gap-1 font-medium">
-      <el-icon><component :is="icon" /></el-icon>
-      {{ title }}
-      <span v-if="count !== undefined" class="text-gray-400">
-        ({{ count }})
-      </span>
+    <div class="flex items-center justify-between px-4 py-2">
+      <div class="flex items-center gap-1 font-medium">
+        <el-icon><component :is="icon" /></el-icon>
+        {{ title }}
+        <span v-if="count !== undefined" class="text-gray-400">
+          ({{ count }})
+        </span>
+      </div>
+      <slot name="extra"></slot>
     </div>
     <slot></slot>
   </div>
