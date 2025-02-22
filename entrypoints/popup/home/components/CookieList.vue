@@ -36,11 +36,7 @@ const handleClear = () => {
 </script>
 
 <template>
-  <CardSection
-    title="已同步 Cookies"
-    :count="cookies.length"
-    :icon="Collection"
-  >
+  <CardSection title="已同步 Cookies" :icon="Collection">
     <template #extra>
       <el-button
         v-if="cookies.length"

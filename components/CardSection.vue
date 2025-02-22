@@ -3,7 +3,6 @@ import { ElIcon } from "element-plus";
 
 defineProps<{
   title: string;
-  count?: number;
   icon?: Component;
 }>();
 </script>
@@ -14,9 +13,6 @@ defineProps<{
       <div class="flex items-center gap-1 font-medium">
         <el-icon><component :is="icon" /></el-icon>
         {{ title }}
-        <span v-if="count !== undefined" class="text-gray-400">
-          ({{ count }})
-        </span>
       </div>
       <slot name="extra"></slot>
     </div>

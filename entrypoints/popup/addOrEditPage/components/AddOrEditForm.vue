@@ -22,6 +22,9 @@ const formData = defineModel<FormData>({
 // 添加 cookie 加载状态
 const loadingCookies = ref<{ [key: number]: boolean }>({});
 
+// 添加状态标记
+const cookiesChanged = ref<{ [key: number]: boolean }>({});
+
 // 获取指定网址的所有cookies
 const getCookies = async (host: string) => {
   if (!host) return [];
@@ -85,7 +88,40 @@ const handleAdd = () => {
   });
 };
 
-// 修改刷新方法，重置选择状态
+// 检查 cookie 是否有变化
+const checkCookieChanges = async (index: number) => {
+  const item = formData.value.list[index];
+  if (!item.host) return;
+
+  try {
+    const newCookies = await getCookies(item.host);
+    const newCookieValues = new Set(newCookies.map(c => c.value));
+    const oldCookieValues = new Set(item.availableCookies?.map(c => c.value) || []);
+
+    // 检查是否有变化
+    const hasChanges = newCookies.length !== (item.availableCookies?.length || 0) ||
+      newCookies.some(cookie => !oldCookieValues.has(cookie.value)) ||
+      (item.availableCookies || []).some(cookie => !newCookieValues.has(cookie.value));
+
+    cookiesChanged.value[index] = hasChanges;
+  } catch (e) {
+    console.error('Check cookie changes error:', e);
+  }
+};
+
+// 检查所有来源的 cookie 变化
+const checkAllCookieChanges = () => {
+  formData.value.list.forEach((_, index) => {
+    checkCookieChanges(index);
+  });
+};
+
+// 在组件挂载时检查变化
+onMounted(() => {
+  checkAllCookieChanges();
+});
+
+// 修改刷新方法，重置变化状态
 const refreshCookies = async (i: number) => {
   const realIndex = formData.value.list.length - 1 - i;
   if (!formData.value.list[realIndex].host) {
@@ -102,6 +138,7 @@ const refreshCookies = async (i: number) => {
       checkAll: false,
       isIndeterminate: false,
     };
+    cookiesChanged.value[realIndex] = false; // 重置变化状态
   } catch (e) {
     console.error(e);
     ElMessage.error("获取 Cookies 失败");
@@ -110,25 +147,17 @@ const refreshCookies = async (i: number) => {
   }
 };
 
-// 监听 host 变化
-watch(
-  () => formData.value.list.map((item) => item.host),
-  async (newHosts, oldHosts) => {
-    for (let i = 0; i < newHosts.length; i++) {
-      if (newHosts[i] !== oldHosts?.[i]) {
-        const cookies = await getCookies(newHosts[i]);
-        formData.value.list[i] = {
-          ...formData.value.list[i],
-          availableCookies: cookies,
-          cookie: [], // 重置选中的cookies
-          checkAll: false,
-          isIndeterminate: false,
-        };
-      }
-    }
-  },
-  { deep: true }
-);
+// 定时检查变化
+let checkInterval: number;
+onMounted(() => {
+  checkInterval = window.setInterval(checkAllCookieChanges, 5000); // 每5秒检查一次
+});
+
+onUnmounted(() => {
+  if (checkInterval) {
+    clearInterval(checkInterval);
+  }
+});
 
 const formRef = ref<InstanceType<typeof ElForm>>();
 defineExpose({ formRef, validate: () => formRef.value?.validate() });
@@ -186,27 +215,28 @@ defineExpose({ formRef, validate: () => formRef.value?.validate() });
         <!-- 来源头部 -->
         <div class="px-4 py-2 flex justify-between items-center">
           <div class="flex items-center gap-2">
-            <span class="font-medium"
-              >来源网址 {{ formData.list.length - i }}</span
-            >
+            <span class="font-medium">来源网址 {{ formData.list.length - i }}</span>
             <el-tag size="small" type="info">
-              已选择:
-              {{
-                item.cookie.length + "/" + (item.availableCookies?.length || 0)
-              }}
+              已选择: {{ item.cookie.length + "/" + (item.availableCookies?.length || 0) }}
             </el-tag>
           </div>
 
           <div class="flex items-center gap-2">
             <el-button
-              type="primary"
+              :type="cookiesChanged[formData.list.length - 1 - i] ? 'warning' : 'primary'"
               :icon="Refresh"
               @click="refreshCookies(i)"
               size="small"
               :loading="loadingCookies[i]"
+              class="!flex !items-center"
               link
             >
-              刷新
+              <template v-if="cookiesChanged[formData.list.length - 1 - i]">
+                <span class="text-warning-500">Cookie 已更新，点击刷新</span>
+              </template>
+              <template v-else>
+                刷新
+              </template>
             </el-button>
             <el-divider direction="vertical" class="!mx-1" />
             <el-button
