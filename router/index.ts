@@ -2,17 +2,13 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import settingsPage from '../entrypoints/popup/settingsPage.vue';
 import addPage from '../entrypoints/popup/addPage.vue';
 import editPage from '../entrypoints/popup/editPage.vue';
-import index from '../entrypoints/popup/index.vue';
+import home from '../entrypoints/popup/home/index.vue';
 
 const routes = [
   {
     path: '/',
-    redirect: '/index'
-  },
-  {
-    path: '/index',
     name: 'home',
-    component: index
+    component: home
   },
   {
     path: '/settings',
