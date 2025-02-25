@@ -9,6 +9,8 @@ import { useRuleStore } from "../../stores/rules";
 import { CookieRule } from "../../types";
 import { STORAGE_KEY } from "./config";
 import { toast } from "vue-sonner";
+import EmptyState from "../../components/EmptyState.vue";
+
 const store = useRuleStore();
 const rules = ref<CookieRule[]>([]);
 const router = useRouter();
@@ -98,7 +100,7 @@ const handleSort = async () => {
       <span class="flex-1 truncate mx-1" :title="rule.targetHost">
         {{ rule.targetHost }}
         <span class="text-gray-400 text-sm">
-          ({{ rule.list?.length }} 个来源)
+          ({{ rule.getHosts?.length }} 个来源)
         </span>
       </span>
       <el-button
@@ -122,7 +124,5 @@ const handleSort = async () => {
     </div>
   </VueDraggable>
 
-  <div v-if="!rules.length" class="text-center text-gray-400 mt-4">
-    暂无规则，请点击右上角添加
-  </div>
+  <EmptyState v-if="!rules.length" />
 </template>

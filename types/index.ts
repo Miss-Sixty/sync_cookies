@@ -4,18 +4,17 @@ export interface Cookie {
 
 export interface ListItem {
   host: string;
-  cookie: string[];
+  cookie?: string[];
   availableCookies?: Cookie[];
-  checkAll?: boolean;
-  isIndeterminate?: boolean;
 }
 
 export interface FormData {
   targetHost: string;
-  list: ListItem[];
+  getHosts: string[];
 }
 
 export interface CookieRule {
   targetHost: string;
-  list: ListItem[];
+  getHosts: string[];
+  cookies?: string[];
 } 

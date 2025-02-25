@@ -1,161 +1,96 @@
 <script lang="ts" setup>
-import { Delete, Plus, Link, Refresh } from "@element-plus/icons-vue";
+import { Delete, Plus, Link } from "@element-plus/icons-vue";
 import { ElForm } from "element-plus";
-import {} from "vue";
 import { FormData } from "../../../../types";
 
 const formData = defineModel<FormData>({
-  default: {
+  default: () => ({
     targetHost: "",
-    list: [
-      {
-        host: "",
-        cookie: [],
-        availableCookies: [],
-        checkAll: false,
-        isIndeterminate: false,
-      },
-    ],
-  },
+    getHosts: [""],  // 初始化为包含一个空字符串的数组
+  }),
 });
-
-// 添加 cookie 加载状态
-const loadingCookies = ref<{ [key: number]: boolean }>({});
-
-// 添加状态标记
-const cookiesChanged = ref<{ [key: number]: boolean }>({});
-
-// 获取指定网址的所有cookies
-const getCookies = async (host: string) => {
-  if (!host) return [];
-  try {
-    if (!host.startsWith("http")) {
-      host = "http://" + host;
-    }
-    const url = new URL(host);
-    const cookies = await browser.cookies.getAll({ domain: url.hostname });
-    return cookies.map((cookie) => ({
-      value: `${cookie.name}=${cookie.value}`,
-    }));
-  } catch (e) {
-    console.error("Invalid URL or cookie error:", e);
-    return [];
-  }
-};
 
 // 计算倒序的列表
-const reversedList = computed(() => [...formData.value.list].reverse());
-
-// 修改删除方法，需要处理倒序后的索引
-const handleDel = (i: number) => {
-  const realIndex = formData.value.list.length - 1 - i;
-  formData.value.list.splice(realIndex, 1);
-};
-
-// 处理全选
-const handleCheckAllChange = (index: number) => {
-  const realIndex = formData.value.list.length - 1 - index;
-  const item = formData.value.list[realIndex];
-
-  if (!item.availableCookies?.length) return;
-
-  item.cookie = item.checkAll ? item.availableCookies.map((c) => c.value) : [];
-  item.isIndeterminate = false;
-};
-
-// 处理选择变化
-const handleCheckedChange = (index: number) => {
-  const realIndex = formData.value.list.length - 1 - index;
-  const item = formData.value.list[realIndex];
-
-  if (!item.availableCookies?.length) return;
-
-  const checkedCount = item.cookie.length;
-  const totalCount = item.availableCookies.length;
-
-  item.checkAll = checkedCount === totalCount;
-  item.isIndeterminate = checkedCount > 0 && checkedCount < totalCount;
-};
-
-// 修改添加方法，初始化选择状态
-const handleAdd = () => {
-  formData.value.list.push({
-    host: "",
-    cookie: [],
-    availableCookies: [],
-    checkAll: false,
-    isIndeterminate: false,
-  });
-};
-
-// 检查 cookie 是否有变化
-const checkCookieChanges = async (index: number) => {
-  const item = formData.value.list[index];
-  if (!item.host) return;
-
-  try {
-    const newCookies = await getCookies(item.host);
-    const newCookieValues = new Set(newCookies.map(c => c.value));
-    const oldCookieValues = new Set(item.availableCookies?.map(c => c.value) || []);
-
-    // 检查是否有变化
-    const hasChanges = newCookies.length !== (item.availableCookies?.length || 0) ||
-      newCookies.some(cookie => !oldCookieValues.has(cookie.value)) ||
-      (item.availableCookies || []).some(cookie => !newCookieValues.has(cookie.value));
-
-    cookiesChanged.value[index] = hasChanges;
-  } catch (e) {
-    console.error('Check cookie changes error:', e);
+const reversedHosts = computed(() => {
+  if (!Array.isArray(formData.value.getHosts)) {
+    formData.value.getHosts = [""];
   }
-};
-
-// 检查所有来源的 cookie 变化
-const checkAllCookieChanges = () => {
-  formData.value.list.forEach((_, index) => {
-    checkCookieChanges(index);
-  });
-};
-
-// 在组件挂载时检查变化
-onMounted(() => {
-  checkAllCookieChanges();
+  return [...formData.value.getHosts].reverse();
 });
 
-// 修改刷新方法，重置变化状态
-const refreshCookies = async (i: number) => {
-  const realIndex = formData.value.list.length - 1 - i;
-  if (!formData.value.list[realIndex].host) {
-    ElMessage.warning("请先输入来源网址");
+// 修改删除方法
+const handleDel = (i: number) => {
+  const realIndex = formData.value.getHosts.length - 1 - i;
+  const newHosts = [...formData.value.getHosts];  // 创建新数组
+  newHosts.splice(realIndex, 1);
+  
+  // 确保至少有一个来源
+  if (newHosts.length === 0) {
+    newHosts.push("");
+  }
+  
+  formData.value.getHosts = newHosts;  // 赋值新数组以触发响应式
+};
+
+// 添加 ref 数组来存储输入框引用
+const inputRefs = ref<any[]>([]);
+
+// 修改添加方法
+const handleAdd = () => {
+  if (!Array.isArray(formData.value.getHosts)) {
+    formData.value.getHosts = [""];
     return;
   }
-  loadingCookies.value[realIndex] = true;
+  formData.value.getHosts = [...formData.value.getHosts, ""];
+  
+  nextTick(() => {
+    // 因为是倒序显示，所以第一个是最新添加的
+    inputRefs.value[0]?.focus();
+  });
+};
+
+// URL 处理函数
+const normalizeUrl = (url: string): string => {
   try {
-    const cookies = await getCookies(formData.value.list[realIndex].host);
-    formData.value.list[realIndex] = {
-      ...formData.value.list[realIndex],
-      availableCookies: cookies,
-      cookie: [], // 重置选中的cookies
-      checkAll: false,
-      isIndeterminate: false,
-    };
-    cookiesChanged.value[realIndex] = false; // 重置变化状态
+    if (!url) return '';
+    // 尝试直接解析 URL
+    return new URL(url).origin;
   } catch (e) {
-    console.error(e);
-    ElMessage.error("获取 Cookies 失败");
-  } finally {
-    loadingCookies.value[realIndex] = false;
+    return '';
   }
 };
 
-// 定时检查变化
-let checkInterval: number;
-onMounted(() => {
-  checkInterval = window.setInterval(checkAllCookieChanges, 5000); // 每5秒检查一次
-});
+// 目标网址的验证器
+const validateUrl = (_: any, value: string, callback: (error?: Error) => void) => {
+  try {
+    if (!value) {
+      callback(new Error('请输入网址'));
+      return;
+    }
+    new URL(value);
+    callback();
+  } catch (e) {
+    callback(new Error('请输入完整的网址，包含 http:// 或 https://'));
+  }
+};
 
-onUnmounted(() => {
-  if (checkInterval) {
-    clearInterval(checkInterval);
+// 来源网址的简单验证器
+const validateSourceUrl = (_: any, value: string, callback: (error?: Error) => void) => {
+  if (!value.trim()) {
+    callback(new Error('请输入来源网址'));
+    return;
+  }
+  callback();
+};
+
+// 只保留目标网址的监听
+watch(() => formData.value.targetHost, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    try {
+      new URL(newValue);  // 只验证是否为有效 URL
+    } catch (e) {
+      formData.value.targetHost = '';
+    }
   }
 });
 
@@ -177,7 +112,10 @@ defineExpose({ formRef, validate: () => formRef.value?.validate() });
       <el-form-item
         prop="targetHost"
         label="目标网址"
-        :rules="{ required: true }"
+        :rules="[
+          { required: true, message: '请输入目标网址' },
+          { validator: validateUrl, trigger: 'blur' }
+        ]"
         class="!mb-0"
       >
         <el-input
@@ -203,114 +141,44 @@ defineExpose({ formRef, validate: () => formRef.value?.validate() });
     </div>
 
     <el-scrollbar
-      v-if="formData.list.length"
+      v-if="formData.getHosts.length"
       class="px-4 pb-4"
       view-class="space-y-2"
     >
       <div
-        v-for="(item, i) in reversedList"
+        v-for="(host, i) in reversedHosts"
         :key="i"
         class="bg-white rounded-lg overflow-hidden"
       >
         <!-- 来源头部 -->
         <div class="px-4 py-2 flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <span class="font-medium">来源网址 {{ formData.list.length - i }}</span>
-            <el-tag size="small" type="info">
-              已选择: {{ item.cookie.length + "/" + (item.availableCookies?.length || 0) }}
-            </el-tag>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <el-button
-              :type="cookiesChanged[formData.list.length - 1 - i] ? 'warning' : 'primary'"
-              :icon="Refresh"
-              @click="refreshCookies(i)"
-              size="small"
-              :loading="loadingCookies[i]"
-              class="!flex !items-center"
-              link
-            >
-              <template v-if="cookiesChanged[formData.list.length - 1 - i]">
-                <span class="text-warning-500">Cookie 已更新，点击刷新</span>
-              </template>
-              <template v-else>
-                刷新
-              </template>
-            </el-button>
-            <el-divider direction="vertical" class="!mx-1" />
-            <el-button
-              type="danger"
-              :icon="Delete"
-              @click="handleDel(i)"
-              size="small"
-              link
-            />
-          </div>
+          <span class="font-medium">来源网址 {{ formData.getHosts.length - i }}</span>
+          <el-button
+            type="danger"
+            :icon="Delete"
+            @click="handleDel(i)"
+            size="small"
+            link
+          />
         </div>
 
         <!-- 来源表单 -->
-        <div class="px-4 space-y-4 pb-3">
+        <div class="px-4 pb-3">
           <el-form-item
-            :prop="`list.${formData.list.length - 1 - i}.host`"
-            :rules="{ required: true }"
+            :prop="`getHosts.${formData.getHosts.length - 1 - i}`"
+            :rules="[
+              { required: true, message: '请输入来源网址' },
+              { validator: validateSourceUrl, trigger: 'blur' }
+            ]"
             class="!mb-0"
           >
             <el-input
-              v-model="item.host"
+              v-model="formData.getHosts[formData.getHosts.length - 1 - i]"
               placeholder="请输入来源网址"
               :prefix-icon="Link"
               clearable
+              :ref="(el) => inputRefs[i] = el"
             />
-          </el-form-item>
-
-          <el-form-item
-            v-if="item.host"
-            :prop="`list.${formData.list.length - 1 - i}.cookie`"
-            :rules="{ required: true, type: 'array' }"
-            class="!mb-0"
-          >
-            <div class="w-full mt-1">
-              <el-checkbox
-                v-model="item.checkAll"
-                :indeterminate="item.isIndeterminate"
-                @change="handleCheckAllChange(i)"
-                class="!mr-0 !p-0"
-              >
-                <span class="text-sm">全选</span>
-              </el-checkbox>
-
-              <!-- Cookie 列表 -->
-              <el-checkbox-group
-                v-model="item.cookie"
-                @change="handleCheckedChange(i)"
-              >
-                <div class="grid grid-cols-3 gap-2">
-                  <el-checkbox
-                    v-for="cookie in item.availableCookies"
-                    :key="cookie.value"
-                    :label="cookie.value"
-                    class="!m-0 !p-0 overflow-hidden"
-                    size="large"
-                  >
-                    <div class="flex flex-col overflow-hidden">
-                      <div
-                        class="font-medium text-sm truncate"
-                        :title="cookie.value.split('=')[0]"
-                      >
-                        {{ cookie.value.split("=")[0] }}
-                      </div>
-                      <div
-                        class="text-xs text-gray-400 truncate"
-                        :title="cookie.value.split('=')[1]"
-                      >
-                        {{ cookie.value.split("=")[1] }}
-                      </div>
-                    </div>
-                  </el-checkbox>
-                </div>
-              </el-checkbox-group>
-            </div>
           </el-form-item>
         </div>
       </div>
@@ -325,7 +193,4 @@ defineExpose({ formRef, validate: () => formRef.value?.validate() });
 
 <style scoped>
 @import "../../style.css";
-:deep(.el-checkbox__label) {
-  @apply overflow-hidden;
-}
 </style>

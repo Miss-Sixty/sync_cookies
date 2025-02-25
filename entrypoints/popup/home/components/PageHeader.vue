@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Setting, Refresh } from "@element-plus/icons-vue";
+import { Setting, Refresh, Plus } from "@element-plus/icons-vue";
 defineProps<{
   currentUrl: string;
   syncing: boolean;
+  needSync?: boolean;
 }>();
 
 defineEmits<{
@@ -27,15 +28,24 @@ defineEmits<{
 
     <el-button
       type="primary"
-      @click="$emit('sync')"
       :loading="syncing"
+      :class="{ 'el-button--warning': needSync }"
+      @click="$emit('sync')"
       :icon="Refresh"
+      title="同步"
     >
-      同步
+      {{ needSync ? "Cookie 已更新，点击同步" : "同步" }}
     </el-button>
 
+    <el-button
+      @click="$router.push('/add')"
+      circle
+      :icon="Plus"
+      title="添加配置"
+    />
+
     <router-link to="/settings" custom v-slot="{ navigate }">
-      <el-button @click="navigate" :icon="Setting" />
+      <el-button @click="navigate" :icon="Setting" circle title="设置" />
     </router-link>
   </div>
 </template>

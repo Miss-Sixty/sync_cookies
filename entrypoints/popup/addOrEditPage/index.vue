@@ -19,10 +19,15 @@ const typeText = computed(() => (type.value === "edit" ? "修改" : "添加"));
 // 表单数据
 const formData = ref<FormData>(
   type.value === "edit"
-    ? store.editingRule
+    ? {
+        targetHost: store.editingRule.targetHost,
+        getHosts: Array.isArray(store.editingRule.getHosts) 
+          ? [...store.editingRule.getHosts] 
+          : [""],  // 确保是数组
+      }
     : {
         targetHost: "",
-        list: [{ host: "", cookie: [], availableCookies: [] }],
+        getHosts: [""],
       }
 );
 
@@ -46,13 +51,12 @@ const getCookies = async (host: string) => {
 
 // 监听每个列表项的host变化
 watch(
-  () => formData.value.list.map((item) => item.host),
+  () => formData.value.getHosts,
   async (newHosts, oldHosts) => {
     for (let i = 0; i < newHosts.length; i++) {
       if (newHosts[i] !== oldHosts?.[i]) {
         const cookies = await getCookies(newHosts[i]);
-        formData.value.list[i].availableCookies = cookies;
-        formData.value.list[i].cookie = []; // 重置选中的cookies
+        // 不再需要处理 cookies，因为已经移到了 home/index.vue
       }
     }
   },
@@ -65,9 +69,7 @@ const getCurrentTab = async () => {
   if (!tabs[0]?.url) return;
   try {
     const url = new URL(tabs[0].url);
-    console.log(111, url);
-
-    formData.value.targetHost = url?.href || "";
+    formData.value.targetHost = url.origin;  // 使用 origin 而不是 href
   } catch (e) {
     console.error("Invalid URL:", e);
   }
@@ -78,7 +80,7 @@ if (type.value === "add") getCurrentTab();
 const validateForm = async () => {
   try {
     await formRef.value?.validate();
-    if (!formData.value.list.length) {
+    if (!formData.value.getHosts.length) {
       toast.error("请至少添加一个来源");
       return;
     }

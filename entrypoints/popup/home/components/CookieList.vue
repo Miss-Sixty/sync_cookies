@@ -54,13 +54,13 @@ const handleClear = () => {
         <div
           v-for="cookie in cookies"
           :key="cookie.name"
-          class="bg-gray-100 rounded p-2 group"
+          class="bg-primary-50 rounded p-2 group relative"
         >
           <div class="flex flex-col">
             <!-- 名称行 -->
             <div class="flex items-center justify-between mb-0.5 gap-2">
               <span
-                class="font-medium text-sm truncate flex-1"
+                class="font-medium text-sm truncate flex-1 text-primary-700"
                 :title="cookie.name"
               >
                 {{ cookie.name }}
@@ -69,13 +69,16 @@ const handleClear = () => {
                 type="danger"
                 size="small"
                 :icon="Delete"
-                class="opacity-0 group-hover:opacity-100 transition-opacity"
+                class="opacity-0 group-hover:opacity-100 transition-opacity !absolute right-1 top-1"
                 @click.stop="handleDelete(cookie.name)"
                 link
               />
             </div>
             <!-- 值行 -->
-            <div class="text-xs text-gray-500 truncate" :title="cookie.value">
+            <div 
+              class="text-xs text-primary-500 truncate" 
+              :title="cookie.value"
+            >
               {{ cookie.value }}
             </div>
           </div>
@@ -94,11 +97,13 @@ const handleClear = () => {
 </template>
 
 <style scoped>
-.group:hover {
-  background-color: rgb(243 244 246);
+.bg-primary-50 {
+  background-color: var(--el-color-primary-light-9);
 }
-
-:deep(.el-button--small) {
-  padding: 4px;
+.text-primary-700 {
+  color: var(--el-color-primary-dark-2);
+}
+.text-primary-500 {
+  color: var(--el-color-primary);
 }
 </style>

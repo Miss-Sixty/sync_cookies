@@ -9,18 +9,22 @@ export const useRuleStore = defineStore('rules', {
   state: () => ({
     editingRule: {
       targetHost: "",
-      list: [{ host: "", cookie: [], availableCookies: [] }],
+      getHosts: [],
     } as CookieRule
   }),
   actions: {
     // 保存表单数据
     async handleSave(formData: FormData, type = 'add') {
       try {
+        // 转换数据结构
         const saveData = JSON.parse(JSON.stringify(formData));
+
         const data = (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
         const index = data.findIndex(rule => rule.targetHost === saveData.targetHost);
+
         if (index === -1) return addData(data, saveData);
-        if (type === 'edit') return editData(data, index, saveData)
+        if (type === 'edit') return editData(data, index, saveData);
+
         const isCover = await ElMessageBox.confirm(
           "目标网址已存在，是否覆盖？",
           "提示",
@@ -31,6 +35,8 @@ export const useRuleStore = defineStore('rules', {
         );
         if (isCover === "confirm") editData(data, index, saveData);
       } catch (e) {
+        console.error('Save error:', e);
+        throw e;
       }
     }
   },
