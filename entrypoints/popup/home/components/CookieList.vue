@@ -2,36 +2,61 @@
 import { Collection, Delete } from "@element-plus/icons-vue";
 import CardSection from "../../../../components/CardSection.vue";
 import { ElMessageBox } from "element-plus";
+import { getCookies } from "../../utils";
+import { toast } from "vue-sonner";
 
 const props = defineProps<{
   cookies: { name: string; value: string }[];
+  currentUrl: string;
+  cookieList: { name: string; value: string }[];
 }>();
 
 const emit = defineEmits<{
   delete: [name: string];
   clear: [];
+  "update:cookieList": [cookieList: { name: string; value: string }[]];
 }>();
 
 // 删除单个 cookie
-const handleDelete = (name: string) => {
-  ElMessageBox.confirm("确定要删除该 Cookie 吗？", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  }).then(() => {
-    emit("delete", name);
-  });
+const handleDeleteCookie = async (name: string) => {
+  try {
+    await browser.cookies.remove({
+      url: props.currentUrl,
+      name,
+    });
+    emit("update:cookieList", await getCookies(props.currentUrl));
+  } catch (e) {
+    console.error("Delete cookie error:", e);
+    toast.error(`删除失败: ${e}`);
+  }
 };
 
 // 清除所有 cookies
-const handleClear = () => {
-  ElMessageBox.confirm("确定要删除全部 Cookie 吗？", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  }).then(() => {
-    emit("clear");
-  });
+const handleClear = async () => {
+  try {
+    await ElMessageBox.confirm("确定要删除全部 Cookie 吗？", "提示", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+    handleClearCookies();
+  } catch (e) {}
+};
+
+// 清除所有 cookies
+const handleClearCookies = async () => {
+  try {
+    for (const cookie of props.cookieList) {
+      await browser.cookies.remove({
+        url: props.currentUrl,
+        name: cookie.name,
+      });
+    }
+    emit("update:cookieList", await getCookies(props.currentUrl));
+  } catch (e) {
+    console.error("Clear cookies error:", e);
+    toast.error(`清除失败: ${e}`);
+  }
 };
 </script>
 
@@ -70,13 +95,13 @@ const handleClear = () => {
                 size="small"
                 :icon="Delete"
                 class="opacity-0 group-hover:opacity-100 transition-opacity !absolute right-1 top-1"
-                @click.stop="handleDelete(cookie.name)"
+                @click.stop="handleDeleteCookie(cookie.name)"
                 link
               />
             </div>
             <!-- 值行 -->
-            <div 
-              class="text-xs text-primary-500 truncate" 
+            <div
+              class="text-xs text-primary-500 truncate"
               :title="cookie.value"
             >
               {{ cookie.value }}
