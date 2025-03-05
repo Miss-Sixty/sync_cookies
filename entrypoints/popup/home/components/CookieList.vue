@@ -115,7 +115,7 @@ const handleClearCookies = async () => {
         v-if="!cookies.length"
         class="text-center text-gray-400 py-4 text-sm"
       >
-        暂无同步的 Cookies
+        页面暂无 Cookies
       </div>
     </div>
   </CardSection>

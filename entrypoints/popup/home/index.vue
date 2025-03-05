@@ -1,50 +1,49 @@
 <script setup lang="ts">
-import { storage } from "wxt/storage";
 import { CookieRule } from "../../../types";
-import { STORAGE_KEY } from "../config";
 import PageHeader from "./components/PageHeader.vue";
-import EmptyState from "../../../components/EmptyState.vue";
 import CookieList from "./components/CookieList.vue";
 import RuleList from "./components/RuleList.vue";
 import { toast } from "vue-sonner";
 import { computed } from "vue";
-import { getCookies, getCurrentUrl } from "../utils";
+import {
+  getAllRules,
+  getCookies,
+  getCurrentRule,
+  getCurrentUrl,
+} from "../utils";
 
 const currentUrl = ref("");
-const currentRule = ref<CookieRule>();
+const currentRule = ref<CookieRule>({
+  targetHost: "",
+  getHosts: [],
+});
 const cookieList = ref<{ name: string; value: string }[]>([]);
 const syncing = ref(false);
-
-// 添加状态
-const sourceCookies = ref<{ [host: string]: string[] }>({});
-const selectedCookies = ref<{ [host: string]: string[] }>({});
 
 // 初始化方法
 const initCurrentPage = async () => {
   try {
-    // 添加调试日志
+    // 获取当前页面url
     currentUrl.value = await getCurrentUrl();
+    currentRule.value.targetHost = currentUrl.value;
     console.log("Current URL:", currentUrl.value);
 
-    // 获取当前页面的 cookies
+    // 获取当前页面地址的 cookies
     cookieList.value = await getCookies(currentUrl.value);
 
-    const rules = (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
-    console.log("All rules:", rules); // 添加调试日志
+    // 获取所有保存规则
+    const rules = await getAllRules();
+    console.log("Rules:", rules);
+    if (!rules?.length) return;
 
-    if (!rules.length) return;
-
-    currentRule.value = rules.find(
-      (rule) => rule.targetHost === currentUrl.value
-    );
-
-    console.log("Current rule:", currentRule.value); // 添加调试日志
-
-    if (!currentRule.value) return;
-
-    // 更新来源的 cookies
-    await updateSourceCookies();
-    console.log("Source cookies:", sourceCookies.value); // 添加调试日志
+    // 获取当前页面保存规则
+    const _currentRule = getCurrentRule(rules, currentUrl.value);
+    if (_currentRule) currentRule.value = _currentRule;
+    console.log("Current rule:", currentRule.value);
+    // 更新所有来源页面的 cookies
+    currentRule.value.getHosts.forEach(async (host) => {
+      host.cookies = await getCookies(host.host);
+    });
   } catch (error) {
     console.error("Init error:", error);
     ElMessage.error("初始化失败");
@@ -52,49 +51,23 @@ const initCurrentPage = async () => {
 };
 initCurrentPage();
 
-// 更新来源的 cookies
-const updateSourceCookies = async () => {
-  if (!currentRule.value?.getHosts?.length) return;
-
-  try {
-    // 获取当前已同步的 cookie 名称集合
-    const currentCookieNames = new Set(
-      cookieList.value.map((cookie) => cookie.name)
-    );
-
-    // 获取每个来源的最新 cookies
-    for (const host of currentRule.value.getHosts) {
-      if (!host) continue;
-      const cookies = await getCookies(host);
-      const cookieStrings = cookies.map(
-        (cookie) => `${cookie.name}=${cookie.value}`
-      );
-      sourceCookies.value[host] = cookieStrings;
-
-      // 自动选中名称匹配的 cookies
-      selectedCookies.value[host] = cookieStrings.filter((cookieStr) => {
-        const name = cookieStr.split("=")[0];
-        return currentCookieNames.has(name);
-      });
-    }
-  } catch (e) {
-    console.error("Update source cookies error:", e);
-    toast.error("更新来源 Cookies 失败");
-  }
-};
-
-// 处理 cookie 选择更新
-const handleCookiesUpdate = (host: string, cookies: string[]) => {
-  selectedCookies.value[host] = cookies;
-};
-
 // 同步cookies
 const handleSync = async () => {
-  // 获取所有选中的 cookies
-  const allSelectedCookies = Object.values(selectedCookies.value).flat();
+  const hosts = currentRule.value?.getHosts;
+  if (!hosts?.length) {
+    toast.error("没有可同步的来源");
+    return;
+  }
 
-  if (!allSelectedCookies.length) {
-    ElMessage.warning("请选择要同步的 Cookie");
+  // 获取所有选中的 cookies
+  const selectedCookies = hosts.flatMap(host => 
+    host.cookies?.filter(cookie => 
+      host.settings.selectedCookies.includes(cookie.name)
+    ) || []
+  );
+
+  if (!selectedCookies.length) {
+    toast.warning("请选择要同步的 Cookie");
     return;
   }
 
@@ -102,12 +75,9 @@ const handleSync = async () => {
     syncing.value = true;
     const targetHostname = new URL(currentUrl.value).hostname;
 
-    // 创建 cookie 映射
+    // 创建 cookie 映射，使用最后一个选中的值
     const cookiesToSync = new Map(
-      allSelectedCookies.map((cookieStr) => {
-        const [name, value] = cookieStr.split("=");
-        return [name, value];
-      })
+      selectedCookies.map(cookie => [cookie.name, cookie.value])
     );
 
     // 1. 获取当前所有 cookies
@@ -125,7 +95,7 @@ const handleSync = async () => {
       }
     }
 
-    // 4. 同步新的 cookies（不重复）
+    // 3. 同步新的 cookies
     for (const [name, value] of cookiesToSync) {
       await browser.cookies.set({
         url: currentUrl.value,
@@ -136,15 +106,8 @@ const handleSync = async () => {
       });
     }
 
-    // 5. 更新显示的 cookie 列表
-    const cookies = await browser.cookies.getAll({
-      domain: targetHostname,
-    });
-    cookieList.value = cookies.map((cookie) => ({
-      name: cookie.name,
-      value: cookie.value,
-    }));
-
+    // 4. 更新显示的 cookie 列表
+    cookieList.value = await getCookies(currentUrl.value);
     toast.success("同步成功");
   } catch (e) {
     console.error("Sync error:", e);
@@ -156,23 +119,28 @@ const handleSync = async () => {
 
 // 添加计算属性检查是否需要同步
 const needSync = computed(() => {
-  if (!currentRule.value || !cookieList.value.length) return false;
+  const hosts = currentRule.value?.getHosts;
+  if (!hosts?.length) return false;
 
-  // 获取所有来源的 cookies
-  const allSourceCookies = new Map(
-    Object.values(sourceCookies.value)
-      .flat()
-      .map((cookie) => {
-        const [name, value] = cookie.split("=");
-        return [name, value];
-      })
+  // 获取所有选中的 cookies
+  const selectedCookies = hosts.flatMap(host => 
+    host.cookies?.filter(cookie => 
+      host.settings.selectedCookies.includes(cookie.name)
+    ) || []
   );
 
-  // 检查当前 cookies 是否与来源 cookies 不同
-  return cookieList.value.some((cookie) => {
-    const sourceValue = allSourceCookies.get(cookie.name);
-    return sourceValue && sourceValue !== cookie.value;
-  });
+  // 如果没有选中的 cookies，不需要同步
+  if (!selectedCookies.length) return false;
+
+  // 比较当前 cookies 和选中的 cookies
+  const currentCookieMap = new Map(
+    cookieList.value.map(cookie => [cookie.name, cookie.value])
+  );
+
+  // 检查是否有不同的值
+  return selectedCookies.some(cookie => 
+    currentCookieMap.get(cookie.name) !== cookie.value
+  );
 });
 </script>
 
@@ -183,25 +151,18 @@ const needSync = computed(() => {
       :syncing="syncing"
       :need-sync="needSync"
       @sync="handleSync"
+      :getHosts="currentRule.getHosts"
     />
-
-    <el-scrollbar class="flex-1 px-4" view-class="pb-4">
+    {{ needSync }}
+    <el-scrollbar class="flex-1 px-3" view-class="pb-3">
       <CookieList
         :cookies="cookieList"
         :current-url="currentUrl"
         v-model:cookie-list="cookieList"
       />
-      <EmptyState
-        class="mt-2"
-        v-if="!currentRule"
-        @add="$router.push('/add')"
-      />
       <RuleList
-        v-else
-        :rules="currentRule.getHosts"
-        :cookies="sourceCookies"
-        :selected-cookies="selectedCookies"
-        @update:cookies="handleCookiesUpdate"
+        :currentRule="currentRule"
+        v-model:getHosts="currentRule.getHosts"
       />
     </el-scrollbar>
   </div>

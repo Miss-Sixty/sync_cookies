@@ -1,115 +1,167 @@
 <script setup lang="ts">
-import { Document, Delete } from "@element-plus/icons-vue";
+import { Document, Edit } from "@element-plus/icons-vue";
 import CardSection from "../../../../components/CardSection.vue";
 import { CheckboxValueType } from "element-plus";
+import { getAllRules, getCookies, handleSaveData } from "../../utils";
+import { GetHosts, CookieRule } from "@/types";
+import EmptyState from "../../../../components/EmptyState.vue";
+import { toast } from "vue-sonner";
+import { STORAGE_KEY } from "../../config";
 
 const props = defineProps<{
-  rules: string[];
-  cookies: { [host: string]: string[] };
-  selectedCookies: { [host: string]: string[] }; // 添加新的 prop
+  getHosts: GetHosts[];
+  currentRule: CookieRule;
 }>();
 
 const emit = defineEmits<{
-  "update:cookies": [host: string, cookies: string[]];
+  "update:cookies": [host: string, cookies: { name: string; value: string }[]];
+  "update:getHosts": [getHosts: GetHosts[]];
 }>();
+const inputRefs = ref<HTMLInputElement[]>([]);
 
-// 每个来源的选择状态
-const checkStates = ref<{
-  [host: string]: {
-    checkAll: boolean;
-    isIndeterminate: boolean;
-    selectedCookies: string[];
-  };
-}>({});
-
-// 初始化选择状态
-watch(
-  () => props.selectedCookies,
-  (newSelected) => {
-    Object.entries(newSelected).forEach(([host, cookies]) => {
-      if (!checkStates.value[host]) {
-        checkStates.value[host] = {
-          checkAll: false,
-          isIndeterminate: false,
-          selectedCookies: [],
-        };
-      }
-      checkStates.value[host].selectedCookies = cookies;
-      const allCookies = props.cookies[host] || [];
-      checkStates.value[host].checkAll = cookies.length === allCookies.length;
-      checkStates.value[host].isIndeterminate =
-        cookies.length > 0 && cookies.length < allCookies.length;
-    });
-  },
-  { immediate: true, deep: true }
-);
-
-const handleCheckAllChange = (host: string, val: CheckboxValueType) => {
-  const state = checkStates.value[host];
-  state.checkAll = val === true; // 确保转换为 boolean
-  state.isIndeterminate = false;
-  state.selectedCookies = state.checkAll ? props.cookies[host] : [];
-  emit("update:cookies", host, state.selectedCookies);
+const handleAdd = () => {
+  props.getHosts.push({
+    host: "",
+    cookies: [],
+    settings: {
+      edit: true,
+      checkAll: false,
+      isIndeterminate: false,
+      selectedCookies: [],
+    },
+  });
+  nextTick(() => {
+    inputRefs.value.at(-1)?.focus();
+  });
 };
 
-const handleCheckedChange = (host: string, value: string[]) => {
-  const state = checkStates.value[host];
-  const allCookies = props.cookies[host] || [];
+const handleDelete = async (i: number) => {
+  const getHosts = JSON.parse(JSON.stringify(props.getHosts));
+  getHosts.splice(i, 1);
+  emit("update:getHosts", getHosts);
+  // 删除存储中对应的规则
+  const rules = await getAllRules();
+  if (!rules) return;
+  const index = rules.findIndex(
+    (rule) => rule.targetHost === props.currentRule.targetHost
+  );
+  if (index !== -1) {
+    rules.splice(index, 1);
+    await storage.setItem(STORAGE_KEY, rules);
+  }
+};
 
-  state.selectedCookies = value;
-  state.checkAll = value.length === allCookies.length;
-  state.isIndeterminate = value.length > 0 && value.length < allCookies.length;
+const handleSave = async (host: GetHosts) => {
+  host.cookies = await getCookies(host.host);
+  host.settings.edit = false;
+  // 存储数据
+  try {
+    const saveData = JSON.parse(JSON.stringify(props.currentRule));
+    await handleSaveData(saveData, "add");
+    toast.success("保存成功");
+  } catch (e) {
+    console.error("Save error:", e);
+    toast.error("保存失败");
+  }
+};
 
-  emit("update:cookies", host, value);
+// 处理全选变化
+const handleCheckAllChange = (host: GetHosts, val: CheckboxValueType) => {
+  host.settings.checkAll = val === true;
+  host.settings.isIndeterminate = false;
+  host.settings.selectedCookies =
+    val === true ? host.cookies.map((cookie) => cookie.name) : [];
+};
+
+// 处理单选变化
+const handleCheckedChange = (host: GetHosts, checkedCookies: string[]) => {
+  const allCookies = host.cookies || [];
+  host.settings.selectedCookies = checkedCookies;
+  host.settings.checkAll = checkedCookies.length === allCookies.length;
+  host.settings.isIndeterminate =
+    checkedCookies.length > 0 && checkedCookies.length < allCookies.length;
 };
 </script>
 
 <template>
   <CardSection title="来源网站" :icon="Document">
-    <div class="space-y-4">
-      <div v-for="(host, i) in rules" :key="host" class="rounded px-4 pb-4">
-        <div class="font-medium mb-2">来源网址 {{ i + 1 }}: {{ host }}</div>
+    <template #extra>
+      <el-button type="primary" @click="handleAdd" size="small" link>
+        添加配置
+      </el-button>
+    </template>
 
-        <template v-if="cookies[host]?.length">
+    <EmptyState class="mt-2" v-if="!getHosts.length" />
+
+    <el-form :model="getHosts" v-else class="space-y-4">
+      <div v-for="(host, i) in getHosts" :key="i" class="rounded px-4 pb-4">
+        <el-form-item :label="`来源网址 ${i + 1}`" class="!mb-1">
+          <div class="flex items-center gap-1 w-full">
+            <el-input
+              v-if="host.settings?.edit"
+              :ref="(el) => inputRefs.push(el as HTMLInputElement)"
+              class="flex-1"
+              v-model="host.host"
+              placeholder="请输入来源网址"
+            />
+            <p class="flex-1" v-else>
+              {{ host.host }}
+              <el-button
+                type="primary"
+                link
+                :icon="Edit"
+                @click="host.settings.edit = true"
+              />
+            </p>
+            <template v-if="host.settings?.edit">
+              <el-button type="primary" link @click="handleSave(host)">
+                保存
+              </el-button>
+              <el-button
+                class="!ml-auto"
+                type="danger"
+                link
+                @click="handleDelete(i)"
+              >
+                删除
+              </el-button>
+            </template>
+          </div>
+        </el-form-item>
+        <template v-if="host.cookies?.length">
           <el-checkbox
-            v-model="checkStates[host].checkAll"
-            :indeterminate="checkStates[host].isIndeterminate"
+            v-model="host.settings.checkAll"
+            :indeterminate="host.settings.isIndeterminate"
             @change="(val) => handleCheckAllChange(host, val)"
+            :disabled="host.host === currentRule.targetHost"
           >
             全选
           </el-checkbox>
 
           <el-checkbox-group
-            v-model="checkStates[host].selectedCookies"
+            v-model="host.settings.selectedCookies"
             @change="(val) => handleCheckedChange(host, val)"
             class="grid grid-cols-3 gap-2"
           >
             <el-checkbox
-              v-for="cookie in cookies[host]"
-              :key="cookie"
-              :value="cookie"
+              v-for="(cookie, i) in host.cookies"
+              :key="i"
+              :value="cookie.name"
+              :disabled="host.host === currentRule.targetHost"
               size="large"
               class="bg-gray-100 rounded p-2 !h-auto !m-0 overflow-hidden"
             >
-              <div
-                class="text-sm font-medium truncate"
-                :title="cookie.split('=')[0]"
-              >
-                {{ cookie.split("=")[0] }}
+              <div class="text-sm font-medium truncate" :title="cookie.name">
+                {{ cookie.name }}
               </div>
-              <div
-                class="text-xs text-gray-500 truncate"
-                :title="cookie.split('=')[1]"
-              >
-                {{ cookie.split("=")[1] }}
+              <div class="text-xs text-gray-500 truncate" :title="cookie.value">
+                {{ cookie.value }}
               </div>
             </el-checkbox>
           </el-checkbox-group>
         </template>
-
-        <div v-else class="text-gray-400 text-sm">暂无可用的 Cookie</div>
       </div>
-    </div>
+    </el-form>
   </CardSection>
 </template>
 

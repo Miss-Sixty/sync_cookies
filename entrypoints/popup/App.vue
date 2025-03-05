@@ -12,7 +12,7 @@ import { CircleCheckFilled, CircleCloseFilled } from "@element-plus/icons-vue";
       <el-icon size="16" color="#F56C6C"><CircleCloseFilled /></el-icon>
     </template>
   </Toaster>
-  <div class="w-[500px] max-h-[450px] flex flex-col bg-gray-100">
+  <div class="w-[500px] h-[450px] flex flex-col bg-gray-100">
     <router-view></router-view>
   </div>
 </template>
