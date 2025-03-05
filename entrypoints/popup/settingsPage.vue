@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { VueDraggable } from "vue-draggable-plus";
-import { Delete, Edit, Plus, Sort } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+import { Delete, Plus, Sort } from "@element-plus/icons-vue";
 import { storage } from "wxt/storage";
 import { useRouter } from "vue-router";
 import Header from "../../components/Header.vue";
@@ -50,14 +49,6 @@ const handleDelete = async (rule: CookieRule) => {
   }
 };
 
-// 编辑规则
-const handleEdit = (rule: CookieRule) => {
-  store.editingRule = rule;
-  router.push({
-    name: "edit",
-  });
-};
-
 // 保存排序
 const handleSort = async () => {
   try {
@@ -103,13 +94,6 @@ const handleSort = async () => {
           ({{ rule.getHosts?.length }} 个来源)
         </span>
       </span>
-      <el-button
-        title="修改"
-        size="small"
-        :icon="Edit"
-        text
-        @click.stop="handleEdit(rule)"
-      />
       <el-popconfirm title="确定要删除吗？" @confirm="handleDelete(rule)">
         <template #reference>
           <el-button

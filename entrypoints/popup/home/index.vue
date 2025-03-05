@@ -10,6 +10,7 @@ import {
   getCookies,
   getCurrentRule,
   getCurrentUrl,
+  handleSaveData,
 } from "../utils";
 
 const currentUrl = ref("");
@@ -108,6 +109,8 @@ const handleSync = async () => {
 
     // 4. 更新显示的 cookie 列表
     cookieList.value = await getCookies(currentUrl.value);
+    const saveData = JSON.parse(JSON.stringify(currentRule.value));
+    await handleSaveData(saveData);
     toast.success("同步成功");
   } catch (e) {
     console.error("Sync error:", e);
@@ -153,7 +156,6 @@ const needSync = computed(() => {
       @sync="handleSync"
       :getHosts="currentRule.getHosts"
     />
-    {{ needSync }}
     <el-scrollbar class="flex-1 px-3" view-class="pb-3">
       <CookieList
         :cookies="cookieList"

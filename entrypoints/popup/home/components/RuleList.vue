@@ -57,7 +57,7 @@ const handleSave = async (host: GetHosts) => {
   // 存储数据
   try {
     const saveData = JSON.parse(JSON.stringify(props.currentRule));
-    await handleSaveData(saveData, "add");
+    await handleSaveData(saveData);
     toast.success("保存成功");
   } catch (e) {
     console.error("Save error:", e);
@@ -96,7 +96,7 @@ const handleCheckedChange = (host: GetHosts, checkedCookies: string[]) => {
     <el-form :model="getHosts" v-else class="space-y-4">
       <div v-for="(host, i) in getHosts" :key="i" class="rounded px-4 pb-4">
         <el-form-item :label="`来源网址 ${i + 1}`" class="!mb-1">
-          <div class="flex items-center gap-1 w-full">
+          <div class="flex items-center gap-1.5 w-full">
             <el-input
               v-if="host.settings?.edit"
               :ref="(el) => inputRefs.push(el as HTMLInputElement)"
@@ -113,9 +113,16 @@ const handleCheckedChange = (host: GetHosts, checkedCookies: string[]) => {
                 @click="host.settings.edit = true"
               />
             </p>
-            <template v-if="host.settings?.edit">
+            <div v-if="host.settings?.edit">
               <el-button type="primary" link @click="handleSave(host)">
                 保存
+              </el-button>
+              <el-button
+                class="!ml-auto"
+                link
+                @click="host.settings.edit = false"
+              >
+                取消
               </el-button>
               <el-button
                 class="!ml-auto"
@@ -125,7 +132,7 @@ const handleCheckedChange = (host: GetHosts, checkedCookies: string[]) => {
               >
                 删除
               </el-button>
-            </template>
+            </div>
           </div>
         </el-form-item>
         <template v-if="host.cookies?.length">
