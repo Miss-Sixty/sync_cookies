@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Document, Edit } from "@element-plus/icons-vue";
-import CardSection from "../../../../components/CardSection.vue";
-import { CheckboxValueType } from "element-plus";
-import { getAllRules, getCookies, handleSaveData } from "../../utils";
+import CardSection from "@/components/CardSection.vue";
+import { CheckboxValueType, FormInstance } from "element-plus";
+import { getAllRules, handleSaveData } from "@/entrypoints/popup/utils";
 import { GetHosts, CookieRule } from "@/types";
-import EmptyState from "../../../../components/EmptyState.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import { toast } from "vue-sonner";
-import { STORAGE_KEY } from "../../config";
+import { STORAGE_KEY } from "@/entrypoints/popup/config";
 
 const props = defineProps<{
   getHosts: GetHosts[];
@@ -18,7 +18,7 @@ const emit = defineEmits<{
   "update:getHosts": [getHosts: GetHosts[]];
 }>();
 const inputRefs = ref<HTMLInputElement[]>([]);
-
+const formRef = ref<FormInstance>();
 const handleAdd = () => {
   props.getHosts.push({
     host: "",
@@ -51,13 +51,20 @@ const handleDelete = async (i: number) => {
   }
 };
 
-const handleSave = async (host: GetHosts) => {
-  host.cookies = await getCookies(host.host);
-  host.settings.edit = false;
-  // 存储数据
+const validator = async (host: GetHosts) => {
   try {
-    const saveData = JSON.parse(JSON.stringify(props.currentRule));
-    await handleSaveData(saveData);
+    await formRef.value?.validate();
+    handleSave(host);
+  } catch (e) {
+    return false;
+  }
+};
+
+// 存储数据
+const handleSave = async (host: GetHosts) => {
+  try {
+    host.settings.edit = false;
+    await handleSaveData(props.currentRule);
     toast.success("保存成功");
   } catch (e) {
     console.error("Save error:", e);
@@ -93,9 +100,24 @@ const handleCheckedChange = (host: GetHosts, checkedCookies: string[]) => {
 
     <EmptyState class="mt-2" v-if="!getHosts.length" />
 
-    <el-form :model="getHosts" v-else class="space-y-4">
+    <el-form
+      ref="formRef"
+      :model="props"
+      v-else
+      class="space-y-4"
+      hide-required-asterisk
+    >
       <div v-for="(host, i) in getHosts" :key="i" class="rounded px-4 pb-4">
-        <el-form-item :label="`来源网址 ${i + 1}`" class="!mb-1">
+        <el-form-item
+          :prop="`getHosts.${i}.host`"
+          :label="`来源网址 ${i + 1}`"
+          class="!mb-1"
+          :rules="{
+            required: true,
+            message: '来源网址不能为空',
+            trigger: 'blur',
+          }"
+        >
           <div class="flex items-center gap-1.5 w-full">
             <el-input
               v-if="host.settings?.edit"
@@ -114,15 +136,8 @@ const handleCheckedChange = (host: GetHosts, checkedCookies: string[]) => {
               />
             </p>
             <div v-if="host.settings?.edit">
-              <el-button type="primary" link @click="handleSave(host)">
+              <el-button type="primary" link @click="validator(host)">
                 保存
-              </el-button>
-              <el-button
-                class="!ml-auto"
-                link
-                @click="host.settings.edit = false"
-              >
-                取消
               </el-button>
               <el-button
                 class="!ml-auto"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Toaster } from "vue-sonner";
 import { CircleCheckFilled, CircleCloseFilled } from "@element-plus/icons-vue";
+import Home from "./index.vue";
 </script>
 
 <template>
@@ -13,6 +14,6 @@ import { CircleCheckFilled, CircleCloseFilled } from "@element-plus/icons-vue";
     </template>
   </Toaster>
   <div class="w-[500px] h-[450px] flex flex-col bg-gray-100">
-    <router-view></router-view>
+    <Home />
   </div>
 </template>

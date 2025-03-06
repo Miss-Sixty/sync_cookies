@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ElIcon } from "element-plus";
-
 defineProps<{
   title: string;
   icon?: Component;

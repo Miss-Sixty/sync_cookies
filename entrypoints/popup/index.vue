@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { CookieRule } from "../../../types";
-import PageHeader from "./components/PageHeader.vue";
-import CookieList from "./components/CookieList.vue";
-import RuleList from "./components/RuleList.vue";
+import { CookieRule } from "@/types";
+import PageHeader from "@/components/PageHeader.vue";
+import CookieList from "@/components/CookieList.vue";
+import RuleList from "@/components/RuleList.vue";
 import { toast } from "vue-sonner";
 import { computed } from "vue";
 import {
@@ -11,14 +11,17 @@ import {
   getCurrentRule,
   getCurrentUrl,
   handleSaveData,
-} from "../utils";
+} from "@/entrypoints/popup/utils";
+import { STORAGE_KEY } from "@/entrypoints/popup/config";
 
-const currentUrl = ref("");
+const currentUrl = ref(""); //当前页面url
+const cookieList = ref<{ name: string; value: string }[]>([]); //当前页面的cookies
+
+// 当前页面保存的规则
 const currentRule = ref<CookieRule>({
   targetHost: "",
   getHosts: [],
 });
-const cookieList = ref<{ name: string; value: string }[]>([]);
 const syncing = ref(false);
 
 // 初始化方法
@@ -41,10 +44,7 @@ const initCurrentPage = async () => {
     const _currentRule = getCurrentRule(rules, currentUrl.value);
     if (_currentRule) currentRule.value = _currentRule;
     console.log("Current rule:", currentRule.value);
-    // 更新所有来源页面的 cookies
-    currentRule.value.getHosts.forEach(async (host) => {
-      host.cookies = await getCookies(host.host);
-    });
+    updateCookies();
   } catch (error) {
     console.error("Init error:", error);
     ElMessage.error("初始化失败");
@@ -61,10 +61,11 @@ const handleSync = async () => {
   }
 
   // 获取所有选中的 cookies
-  const selectedCookies = hosts.flatMap(host => 
-    host.cookies?.filter(cookie => 
-      host.settings.selectedCookies.includes(cookie.name)
-    ) || []
+  const selectedCookies = hosts.flatMap(
+    (host) =>
+      host.cookies?.filter((cookie) =>
+        host.settings.selectedCookies.includes(cookie.name)
+      ) || []
   );
 
   if (!selectedCookies.length) {
@@ -76,27 +77,10 @@ const handleSync = async () => {
     syncing.value = true;
     const targetHostname = new URL(currentUrl.value).hostname;
 
-    // 创建 cookie 映射，使用最后一个选中的值
     const cookiesToSync = new Map(
-      selectedCookies.map(cookie => [cookie.name, cookie.value])
+      selectedCookies.map((cookie) => [cookie.name, cookie.value])
     );
 
-    // 1. 获取当前所有 cookies
-    const currentCookies = await browser.cookies.getAll({
-      domain: targetHostname,
-    });
-
-    // 2. 删除不在同步列表中的 cookies
-    for (const cookie of currentCookies) {
-      if (!cookiesToSync.has(cookie.name)) {
-        await browser.cookies.remove({
-          url: currentUrl.value,
-          name: cookie.name,
-        });
-      }
-    }
-
-    // 3. 同步新的 cookies
     for (const [name, value] of cookiesToSync) {
       await browser.cookies.set({
         url: currentUrl.value,
@@ -107,10 +91,8 @@ const handleSync = async () => {
       });
     }
 
-    // 4. 更新显示的 cookie 列表
     cookieList.value = await getCookies(currentUrl.value);
-    const saveData = JSON.parse(JSON.stringify(currentRule.value));
-    await handleSaveData(saveData);
+    await handleSaveData(currentRule.value, "edit");
     toast.success("同步成功");
   } catch (e) {
     console.error("Sync error:", e);
@@ -126,10 +108,11 @@ const needSync = computed(() => {
   if (!hosts?.length) return false;
 
   // 获取所有选中的 cookies
-  const selectedCookies = hosts.flatMap(host => 
-    host.cookies?.filter(cookie => 
-      host.settings.selectedCookies.includes(cookie.name)
-    ) || []
+  const selectedCookies = hosts.flatMap(
+    (host) =>
+      host.cookies?.filter((cookie) =>
+        host.settings.selectedCookies.includes(cookie.name)
+      ) || []
   );
 
   // 如果没有选中的 cookies，不需要同步
@@ -137,13 +120,29 @@ const needSync = computed(() => {
 
   // 比较当前 cookies 和选中的 cookies
   const currentCookieMap = new Map(
-    cookieList.value.map(cookie => [cookie.name, cookie.value])
+    cookieList.value.map((cookie) => [cookie.name, cookie.value])
   );
 
   // 检查是否有不同的值
-  return selectedCookies.some(cookie => 
-    currentCookieMap.get(cookie.name) !== cookie.value
+  return selectedCookies.some(
+    (cookie) => currentCookieMap.get(cookie.name) !== cookie.value
   );
+});
+
+const unwatch = storage.watch<CookieRule[]>(STORAGE_KEY, (val) => {
+  console.log("Count changed:", val);
+  updateCookies();
+});
+
+// 更新所有来源页面的 cookies
+const updateCookies = async () => {
+  currentRule.value.getHosts.forEach(async (host) => {
+    host.cookies = await getCookies(host.host);
+  });
+};
+
+onUnmounted(() => {
+  unwatch();
 });
 </script>
 

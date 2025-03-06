@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { GetHosts } from "@/types";
-import { Setting, Refresh, Plus } from "@element-plus/icons-vue";
+import { Setting, Refresh } from "@element-plus/icons-vue";
+import Drawer from "@/components/Drawer.vue";
 defineProps<{
   currentUrl: string;
   syncing: boolean;
@@ -12,6 +13,8 @@ defineEmits<{
   sync: [];
   settings: [];
 }>();
+
+const visible = ref(false);
 </script>
 
 <template>
@@ -40,8 +43,7 @@ defineEmits<{
       {{ needSync ? "Cookie 已更新，点击同步" : "同步" }}
     </el-button>
 
-    <router-link to="/settings" custom v-slot="{ navigate }">
-      <el-button @click="navigate" :icon="Setting" circle title="设置" />
-    </router-link>
+    <el-button @click="visible = true" :icon="Setting" circle title="设置" />
+    <Drawer v-model="visible"></Drawer>
   </div>
 </template>

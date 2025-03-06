@@ -1,4 +1,4 @@
-import { Cookie, CookieRule, GetHosts } from "@/types";
+import { Cookie, CookieRule } from "@/types";
 import { STORAGE_KEY } from "./config";
 import { ElMessageBox } from "element-plus";
 
@@ -11,7 +11,19 @@ export const getCookies = async (host: string): Promise<Cookie[]> => {
     }
     const url = new URL(host);
     const cookies = await browser.cookies.getAll({ domain: url.hostname });
-    return cookies.filter(cookie => cookie.name !== undefined && cookie.value !== undefined).map(item => ({ name: item.name, value: item.value }));
+    
+    // 使用 Map 去重，保留最后一个出现的 cookie
+    const uniqueCookies = new Map();
+    cookies.forEach(cookie => {
+      if (cookie.name && cookie.value) {
+        uniqueCookies.set(cookie.name, {
+          name: cookie.name,
+          value: cookie.value
+        });
+      }
+    });
+    
+    return Array.from(uniqueCookies.values());
   } catch (e) {
     console.error("Get cookies error:", e);
     return [];
@@ -31,12 +43,14 @@ export const getCurrentUrl = async () => {
 // 保存表单数据
 export const handleSaveData = async (formData: CookieRule, type = 'add') => {
   try {
+    const saveData = JSON.parse(JSON.stringify(formData));
+
     // 转换数据结构
     const data = (await storage.getItem<CookieRule[]>(STORAGE_KEY)) || [];
-    const index = data.findIndex(rule => rule.targetHost === formData.targetHost);
+    const index = data.findIndex(rule => rule.targetHost === saveData.targetHost);
 
-    if (index === -1) return addData(data, formData);
-    if (type === 'edit') return editData(data, index, formData);
+    if (index === -1) return addData(data, saveData);
+    if (type === 'edit') return editData(data, index, saveData);
 
     const isCover = await ElMessageBox.confirm(
       "目标网址已存在，是否覆盖？",
@@ -46,7 +60,7 @@ export const handleSaveData = async (formData: CookieRule, type = 'add') => {
         cancelButtonText: "取消",
       }
     );
-    if (isCover === "confirm") editData(data, index, formData);
+    if (isCover === "confirm") editData(data, index, saveData);
   } catch (e) {
     console.error('Save error:', e);
     throw e;
@@ -73,3 +87,19 @@ export const getAllRules = () => storage.getItem<CookieRule[]>(STORAGE_KEY) || [
 export const getCurrentRule = (rules: CookieRule[], url: string) => {
   return rules.find(rule => rule.targetHost === url);
 }
+
+// 清除 cookies
+export const handleClearCookies = async (url: string, cookies: Cookie[]) => {
+  try {
+    for (const cookie of cookies) {
+      await browser.cookies.remove({
+        url,
+        name: cookie.name,
+      });
+    }
+    return await getCookies(url);
+  } catch (e) {
+    console.error("Clear cookies error:", e);
+    throw e;
+  }
+};
