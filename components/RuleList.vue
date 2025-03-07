@@ -126,7 +126,7 @@ const handleCheckedChange = (host: GetHosts, checkedCookies: string[]) => {
               v-model="host.host"
               placeholder="请输入来源网址"
             />
-            <p class="flex-1" v-else>
+            <p class="flex-1 truncate" v-else>
               {{ host.host }}
               <el-button
                 type="primary"
