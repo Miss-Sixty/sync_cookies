@@ -12,6 +12,8 @@ export default defineConfig({
   extensionApi: 'chrome',
   modules: ['@wxt-dev/module-vue'],
   manifest: {
+    name: 'Sync Cookies',
+    description: '多域名cookies同步',
     permissions: [
       "activeTab",  // 这个权限允许我们访问当前标签页的所有信息，包括 cookies
       "cookies",    // 用于操作 cookies
@@ -32,6 +34,9 @@ export default defineConfig({
       }),
       ElementPlus({}),
     ],
+    define: {
+      'import.meta.env.BUILD_TIME': JSON.stringify(new Date().toISOString())
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./', import.meta.url))

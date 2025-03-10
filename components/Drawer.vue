@@ -54,14 +54,15 @@ const handleSort = async () => {
   }
 };
 
-// 添加构建日期
-const buildDate = new Intl.DateTimeFormat("zh-CN", {
+// 使用构建时注入的环境变量
+const buildTimeISO = import.meta.env.BUILD_TIME || new Date().toISOString();
+const buildDate = new Date(buildTimeISO).toLocaleDateString("zh-CN", {
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
-}).format(new Date()).replace(/\//g, "-");
+}).replace(/\//g, "-");
 </script>
 
 <template>
@@ -116,13 +117,13 @@ const buildDate = new Intl.DateTimeFormat("zh-CN", {
 
     <!-- 添加页脚 -->
     <div
-      class="px-3 py-2 flex justify-between items-center text-xs text-gray-400"
+      class="px-1 py-2 flex justify-between items-center text-xs text-gray-400"
     >
-      <span>{{ buildDate }}</span>
+      <span class="scale-90">更新日期：{{ buildDate }}</span>
       <a
         href="https://github.com/SeahorZhang/sync_cookies"
         target="_blank"
-        class="flex items-center gap-1 hover:text-gray-700 transition-colors"
+        class="flex items-center gap-1 hover:text-gray-700 transition-colors scale-90"
       >
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
           <path

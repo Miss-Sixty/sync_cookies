@@ -13,7 +13,7 @@ import Home from "./index.vue";
       <el-icon size="16" color="#F56C6C"><CircleCloseFilled /></el-icon>
     </template>
   </Toaster>
-  <div class="w-[500px] h-[450px] flex flex-col bg-gray-100">
+  <div class="w-[601px] h-[450px] flex flex-col bg-gray-100">
     <Home />
   </div>
 </template>
