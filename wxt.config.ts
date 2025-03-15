@@ -14,6 +14,7 @@ export default defineConfig({
   manifest: {
     name: 'Sync Cookies',
     description: '多域名cookies同步',
+    incognito: "split",  // 允许扩展在无痕模式下运行
     permissions: [
       "activeTab",  // 这个权限允许我们访问当前标签页的所有信息，包括 cookies
       "cookies",    // 用于操作 cookies
